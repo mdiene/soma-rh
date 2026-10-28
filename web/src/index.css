@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Archivo', system-ui, sans-serif;
+    font-stretch: 100%;
+    color: #1d2a33;
+    background: #f6f7f5;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-stretch: 78%;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  .num, td, input[type='number'] {
+    font-variant-numeric: tabular-nums;
+  }
+  :focus-visible {
+    outline: 2px solid #0f6e6a;
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+}
+
+@layer components {
+  .field {
+    @apply w-full rounded border border-line bg-white px-3 py-2 text-sm text-ink
+           placeholder:text-ink-muted focus:border-river focus:outline-none focus:ring-2 focus:ring-river/20
+           disabled:bg-paper disabled:text-ink-muted;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium text-ink-soft;
+  }
+  .panel {
+    @apply rounded border border-line bg-white;
+  }
+  .table-head {
+    @apply border-b border-line bg-paper text-left text-xs font-semibold text-ink-soft;
+  }
+}
+
+/* ---------------------------------------------------------- bulletin imprimé */
+.slip {
+  font-stretch: 92%;
+}
+.slip table td, .slip table th {
+  padding: 3px 6px;
+}
+
+@media print {
+  @page { size: A4; margin: 10mm; }
+  html, body { background: #fff !important; }
+  .no-print { display: none !important; }
+  .print-area { box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; }
+  .slip { break-after: page; font-size: 10.5px; }
+  .slip:last-child { break-after: auto; }
+  main { padding: 0 !important; }
+}

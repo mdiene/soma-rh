@@ -1,0 +1,70 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase, unwrap } from '../lib/supabase'
+import { useAuth } from '../lib/auth'
+import { useCompany, usePayrollEntries } from '../lib/queries'
+import { currentPeriod, date, monthBounds, monthLabel } from '../lib/format'
+import { Badge, Button, Empty, ErrorNote, Modal, PageHeader, SelectField, Spinner, TextField } from '../components/ui'
+
+export default function PayrollEntriesPage() {
+  const entries = usePayrollEntries()
+  const nav = useNavigate()
+  const { can } = useAuth()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <PageHeader
+        title="Traitements de paie"
+        description="Un traitement par mois : calcul de tous les bulletins, contrôle, puis validation définitive."
+        actions={can('paie') && <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setOpen(true)}>Nouveau traitement</Button>}
+      />
+      <ErrorNote error={entries.error} />
+      {entries.isLoading ? <Spinner /> : (entries.data ?? []).length === 0 ? (
+        <Empty title="Aucun traitement de paie">Créez le traitement du mois, puis lancez le calcul des bulletins.</Empty>
+      ) : (
+        <ul className="panel divide-y divide-line">
+          {entries.data!.map((e) => (
+            <li key={e.id}>
+              <button onClick={() => nav(`/paie/${e.id}`)} className="grid w-full grid-cols-[1fr_auto] items-center gap-4 px-4 py-3 text-left hover:bg-river-light/40 sm:grid-cols-[12rem_1fr_auto]">
+                <span className="text-base font-semibold" style={{ fontStretch: '82%' }}>{monthLabel(e.period_start)}</span>
+                <span className="hidden text-sm text-ink-soft sm:block">Du {date(e.period_start)} au {date(e.period_end)} · paiement par {e.payment_mode}{e.notes ? ` · ${e.notes}` : ''}</span>
+                <Badge value={e.status} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <NewEntryModal open={open} onClose={() => setOpen(false)} />
+    </>
+  )
+}
+
+function NewEntryModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const company = useCompany()
+  const qc = useQueryClient()
+  const nav = useNavigate()
+  const [period, setPeriod] = useState(currentPeriod())
+  const [mode, setMode] = useState('espèces')
+  const create = useMutation({
+    mutationFn: async () => {
+      const { start, end } = monthBounds(period)
+      return unwrap(await supabase.from('payroll_entries').insert({ company_id: company.data!.id, period_start: start, period_end: end, posting_date: end, payment_mode: mode }).select().single())
+    },
+    onSuccess: (row) => { qc.invalidateQueries({ queryKey: ['payroll_entries'] }); onClose(); nav(`/paie/${row.id}`) },
+  })
+  return (
+    <Modal open={open} onClose={onClose} title="Nouveau traitement de paie"
+      footer={<><Button variant="ghost" onClick={onClose}>Annuler</Button><Button variant="primary" loading={create.isPending} onClick={() => create.mutate()}>Créer le traitement</Button></>}>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <TextField label="Mois de paie" type="month" value={period.slice(0, 7)} onChange={(e) => setPeriod(`${e.target.value}-01`)} />
+        <SelectField label="Mode de paiement" value={mode} onChange={(e) => setMode(e.target.value)}>
+          {['espèces', 'virement', 'chèque', 'mobile money'].map((s) => <option key={s}>{s}</option>)}
+        </SelectField>
+      </div>
+      <div className="mt-3"><ErrorNote error={create.error} /></div>
+    </Modal>
+  )
+}
