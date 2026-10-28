@@ -5,6 +5,10 @@ dist/
 *.log
 graphify-out/
 .DS_Store
+# Dossiers et fichiers locaux (archives de synchronisation, lockfile créé par l'installateur de skills)
+_archive/
+/package-lock.json
+/node_modules/
 # Données personnelles des salariés (reprise Excel)
 supabase/seed/
 *.xlsx
