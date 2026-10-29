@@ -79,7 +79,10 @@ export type Database = {
           overtime_15: number
           overtime_40: number
           overtime_60: number
+          sick_hours: number
           status: string
+          updated_at: string
+          updated_by: string | null
           working_hours: number | null
         }
         Insert: {
@@ -94,7 +97,10 @@ export type Database = {
           overtime_15?: number
           overtime_40?: number
           overtime_60?: number
+          sick_hours?: number
           status: string
+          updated_at?: string
+          updated_by?: string | null
           working_hours?: number | null
         }
         Update: {
@@ -109,7 +115,10 @@ export type Database = {
           overtime_15?: number
           overtime_40?: number
           overtime_60?: number
+          sick_hours?: number
           status?: string
+          updated_at?: string
+          updated_by?: string | null
           working_hours?: number | null
         }
         Relationships: [
