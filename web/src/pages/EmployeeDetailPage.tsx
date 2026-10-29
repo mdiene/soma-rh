@@ -1,12 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Save, Target } from 'lucide-react'
+import { ArrowLeft, Lock, Save, Target } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { omit, supabase, unwrap, type Tables } from '../lib/supabase'
 import { useAgreements, useCompany, useDesignations, useGrades } from '../lib/queries'
 import { useAuth } from '../lib/auth'
 import { currentPeriod, fcfa, monthBounds, monthLabel } from '../lib/format'
-import { Badge, Button, ErrorNote, PageHeader, Section, SelectField, Spinner, TextField } from '../components/ui'
+import { Badge, Button, ErrorNote, Modal, PageHeader, Section, SelectField, Spinner, TextField } from '../components/ui'
 
 type Emp = Tables<'employees'>
 type Assign = Tables<'salary_structure_assignments'>
@@ -20,6 +20,7 @@ export default function EmployeeDetailPage() {
   const { id } = useParams()
   const isNew = id === 'nouveau'
   const nav = useNavigate()
+  const location = useLocation()
   const qc = useQueryClient()
   const { can } = useAuth()
   const company = useCompany()
@@ -39,18 +40,28 @@ export default function EmployeeDetailPage() {
     setForm((f) => ({ ...f, [k]: v }))
   }
 
+  // matricule : attribué par la base à la création (séquence + déclencheur), jamais envoyé par le formulaire
+  const preview = useQuery({
+    queryKey: ['next-employee-number'],
+    enabled: isNew,
+    queryFn: async () => unwrap(await supabase.rpc('preview_employee_number')) as string,
+  })
+  const created = (location.state as { createdNumber?: string } | null)?.createdNumber
+  const [changing, setChanging] = useState(false)
+
   const save = useMutation({
     mutationFn: async () => {
-      const payload = omit({ ...form, company_id: form.company_id ?? company.data?.id } as Emp, 'created_at', 'updated_at')
+      const payload = omit({ ...form, company_id: form.company_id ?? company.data?.id } as Emp, 'created_at', 'updated_at', 'employee_number')
       if (isNew) {
-        return unwrap(await supabase.from('employees').insert(omit(payload, 'id')).select().single())
+        return unwrap(await supabase.from('employees').insert(omit(payload, 'id') as Emp).select().single())
       }
       return unwrap(await supabase.from('employees').update(payload).eq('id', id!).select().single())
     },
     onSuccess: (row) => {
       qc.invalidateQueries({ queryKey: ['employees'] })
       qc.invalidateQueries({ queryKey: ['employee', row.id] })
-      if (isNew) nav(`/salaries/${row.id}`, { replace: true })
+      qc.invalidateQueries({ queryKey: ['next-employee-number'] })
+      if (isNew) nav(`/salaries/${row.id}`, { replace: true, state: { createdNumber: row.employee_number } })
     },
   })
 
@@ -62,16 +73,34 @@ export default function EmployeeDetailPage() {
       <Link to="/salaries" className="no-print mb-3 inline-flex items-center gap-1 text-sm text-ink-soft hover:text-river"><ArrowLeft className="h-4 w-4" /> Salariés</Link>
       <PageHeader
         title={isNew ? 'Nouveau salarié' : `${form.first_name ?? ''} ${form.last_name ?? ''}`}
-        description={isNew ? 'Renseignez au minimum le matricule, le nom, le contrat et la date d’entrée.' : <span className="inline-flex items-center gap-2">{form.employee_number} <Badge value={form.status ?? 'Active'} /></span>}
-        actions={!readOnly && <Button variant="primary" icon={<Save className="h-4 w-4" />} loading={save.isPending} onClick={() => save.mutate()}>Enregistrer la fiche</Button>}
+        description={isNew ? 'Renseignez au minimum le nom, le contrat et la date d’entrée. Le matricule est attribué automatiquement.' : <span className="inline-flex items-center gap-2">{form.employee_number} <Badge value={form.status ?? 'Active'} /></span>}
+        actions={!readOnly && <Button variant="primary" icon={<Save className="h-4 w-4" />} loading={save.isPending} onClick={() => save.mutate()}>{isNew ? 'Créer le salarié' : 'Enregistrer la fiche'}</Button>}
       />
       <ErrorNote error={emp.error || save.error} />
-      {save.isSuccess && <p className="mb-4 rounded border border-river/30 bg-river-light px-3 py-2 text-sm text-river-dark">Fiche enregistrée.</p>}
+      {created && !save.isSuccess && <p className="mb-4 rounded border border-river/30 bg-river-light px-3 py-2 text-sm text-river-dark">Salarié créé avec le matricule <strong>{created}</strong>.</p>}
+      {save.isSuccess && !isNew && <p className="mb-4 rounded border border-river/30 bg-river-light px-3 py-2 text-sm text-river-dark">Fiche enregistrée.</p>}
+      {!isNew && emp.data && (
+        <ChangeNumberModal open={changing} onClose={() => setChanging(false)} employeeId={emp.data.id} current={emp.data.employee_number} />
+      )}
 
       <fieldset disabled={readOnly} className="grid gap-6 xl:grid-cols-2">
         <Section title="Identité">
           <div className="grid gap-3 sm:grid-cols-2">
-            <TextField label="Matricule" required value={form.employee_number ?? ''} onChange={set('employee_number')} />
+            <div>
+              <span className="label">Matricule</span>
+              <div className="flex items-center gap-2">
+                <span className="field inline-flex items-center gap-2 bg-paper font-semibold" aria-live="polite">
+                  <Lock className="h-3.5 w-3.5 text-ink-muted" aria-hidden />
+                  {isNew ? (preview.data ?? '…') : form.employee_number}
+                </span>
+                {!isNew && can('admin') && (
+                  <button type="button" className="whitespace-nowrap text-xs text-river hover:underline" onClick={() => setChanging(true)}>Corriger…</button>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-ink-muted">
+                {isNew ? 'Prochain matricule, attribué définitivement à l’enregistrement.' : 'Attribué automatiquement, non modifiable.'}
+              </p>
+            </div>
             <SelectField label="Sexe" value={form.gender ?? ''} onChange={set('gender')}><option value="">—</option><option value="M">Masculin</option><option value="F">Féminin</option></SelectField>
             <TextField label="Prénom" required value={form.first_name ?? ''} onChange={set('first_name')} />
             <TextField label="Nom" required value={form.last_name ?? ''} onChange={set('last_name')} />
@@ -263,5 +292,36 @@ function SlipHistory({ employeeId }: { employeeId: string }) {
         </table>
       )}
     </Section>
+  )
+}
+
+/** Procédure d'administration exceptionnelle : correction d'un matricule, motif obligatoire, journalisée. */
+function ChangeNumberModal({ open, onClose, employeeId, current }: { open: boolean; onClose: () => void; employeeId: string; current: string }) {
+  const qc = useQueryClient()
+  const [value, setValue] = useState(current)
+  const [reason, setReason] = useState('')
+  const change = useMutation({
+    mutationFn: async () => unwrap(await supabase.rpc('admin_change_employee_number', { p_employee_id: employeeId, p_new_number: value, p_reason: reason })),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['employee', employeeId] })
+      qc.invalidateQueries({ queryKey: ['employees'] })
+      onClose()
+    },
+  })
+  return (
+    <Modal open={open} onClose={onClose} title={`Corriger le matricule ${current}`}
+      footer={<>
+        <Button variant="ghost" onClick={onClose}>Annuler</Button>
+        <Button variant="primary" loading={change.isPending} disabled={!reason.trim() || value.trim().toUpperCase() === current} onClick={() => change.mutate()}>Corriger le matricule</Button>
+      </>}>
+      <p className="mb-3 text-sm text-ink-soft">
+        Réservé aux administrateurs, pour corriger une erreur de reprise. Les bulletins déjà émis conservent l'ancien matricule. Le changement est inscrit au journal d'audit.
+      </p>
+      <div className="grid gap-3">
+        <TextField label="Nouveau matricule" value={value} onChange={(e) => setValue(e.target.value)} hint="Format : S suivi d'au moins 4 chiffres" />
+        <TextField label="Motif (obligatoire)" value={reason} onChange={(e) => setReason(e.target.value)} />
+      </div>
+      <div className="mt-3"><ErrorNote error={change.error} /></div>
+    </Modal>
   )
 }

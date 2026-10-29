@@ -145,6 +145,42 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor: string | null
+          id: number
+          new_data: Json | null
+          occurred_at: string
+          old_data: Json | null
+          reason: string | null
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          id?: never
+          new_data?: Json | null
+          occurred_at?: string
+          old_data?: Json | null
+          reason?: string | null
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          id?: never
+          new_data?: Json | null
+          occurred_at?: string
+          old_data?: Json | null
+          reason?: string | null
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       collective_agreements: {
         Row: {
           code: string
@@ -1624,6 +1660,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_change_employee_number: {
+        Args: { p_employee_id: string; p_new_number: string; p_reason: string }
+        Returns: string
+      }
       admin_link_employee: {
         Args: { p_employee_id: string; p_user_id: string }
         Returns: undefined
@@ -1683,6 +1723,7 @@ export type Database = {
       hr_dashboard: { Args: { p_period?: string }; Returns: Json }
       hr_dashboard_year: { Args: { p_year: number }; Returns: Json }
       my_employee_id: { Args: never; Returns: string }
+      next_employee_number: { Args: never; Returns: string }
       payroll_settings_at: {
         Args: { p_date: string }
         Returns: {
@@ -1721,6 +1762,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      preview_employee_number: { Args: never; Returns: string }
       run_payroll_entry: { Args: { p_payroll_entry_id: string }; Returns: Json }
       severance_coefficient: {
         Args: { p_entry: string; p_exit: string; p_kind: string }
