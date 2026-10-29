@@ -1,20 +1,28 @@
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Printer } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { supabase, unwrap } from '../lib/supabase'
 import { useCompany } from '../lib/queries'
 import { monthLabel } from '../lib/format'
 import { SalarySlipDocument } from '../components/SalarySlipDocument'
 import { Button, ErrorNote, Spinner } from '../components/ui'
 
-/** Tous les bulletins d'un traitement, un par page A4 (remplace la macro Export_BulletinSalaire). */
+/**
+ * Bulletins imprimables, un par page A4 (remplace la macro Export_BulletinSalaire) :
+ * - /paie/:id/imprimer : tous les bulletins d'un traitement ;
+ * - /bulletins/imprimer?ids=a,b,c : une sélection (page « Mes bulletins »).
+ */
 export default function PrintSlipsPage() {
   const { id } = useParams()
+  const [params] = useSearchParams()
+  const selectedIds = (params.get('ids') ?? '').split(',').filter(Boolean)
   const company = useCompany()
   const q = useQuery({
-    queryKey: ['print-slips', id],
+    queryKey: ['print-slips', id ?? selectedIds.join(',')],
     queryFn: async () => {
-      const slips = unwrap(await supabase.from('salary_slips').select('*').eq('payroll_entry_id', id!).neq('status', 'Annulé').order('employee_number'))
+      const base = supabase.from('salary_slips').select('*').neq('status', 'Annulé')
+      const slips = unwrap(await (id ? base.eq('payroll_entry_id', id) : base.in('id', selectedIds))
+        .order('employee_number').order('period_start'))
       const ids = slips.map((s) => s.id)
       const [details, ytd] = await Promise.all([
         supabase.from('salary_slip_details').select('*').in('salary_slip_id', ids),
@@ -29,9 +37,11 @@ export default function PrintSlipsPage() {
   return (
     <>
       <div className="no-print mb-4 flex flex-wrap items-center justify-between gap-3">
-        <Link to={`/paie/${id}`} className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-river"><ArrowLeft className="h-4 w-4" /> Retour au traitement</Link>
+        <Link to={id ? `/paie/${id}` : '/mes-bulletins'} className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-river">
+          <ArrowLeft className="h-4 w-4" /> {id ? 'Retour au traitement' : 'Retour aux bulletins'}
+        </Link>
         <div className="flex items-center gap-3">
-          <p className="text-sm text-ink-soft">{slips.length} bulletin(s) — {slips[0] ? monthLabel(slips[0].period_start) : ''}</p>
+          <p className="text-sm text-ink-soft">{slips.length} bulletin(s){id && slips[0] ? ` — ${monthLabel(slips[0].period_start)}` : ''}</p>
           <Button variant="primary" icon={<Printer className="h-4 w-4" />} onClick={() => window.print()}>Imprimer ou enregistrer en PDF</Button>
         </div>
       </div>

@@ -26,7 +26,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
       { to: '/paie', label: 'Traitements de paie', icon: Wallet, roles: ['paie', 'rh'] },
       { to: '/paie/simulateur', label: 'Simulateur net / brut', icon: Calculator, roles: ['paie'] },
       { to: '/etats', label: 'États et déclarations', icon: FileSpreadsheet, roles: ['paie', 'rh'] },
-      { to: '/mes-bulletins', label: 'Mes bulletins', icon: BarChart3, roles: ['salarie'] },
+      { to: '/mes-bulletins', label: 'Mes bulletins', icon: BarChart3, roles: ['salarie', 'rh', 'paie'] },
     ],
   },
   { title: 'Administration', items: [{ to: '/parametres', label: 'Paramètres', icon: Settings }] },

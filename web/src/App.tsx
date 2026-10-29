@@ -45,6 +45,7 @@ export default function App() {
         <Route path="paie/simulateur" element={<SimulatorPage />} />
         <Route path="paie/:id" element={<PayrollEntryPage />} />
         <Route path="paie/:id/imprimer" element={<PrintSlipsPage />} />
+        <Route path="bulletins/imprimer" element={<PrintSlipsPage />} />
         <Route path="bulletins/:id" element={<SalarySlipPage />} />
         <Route path="etats" element={<ReportsPage />} />
         <Route path="parametres" element={<SettingsPage />} />
