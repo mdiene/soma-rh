@@ -3,7 +3,7 @@ import { ArrowLeft, Lock, Save, Target } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { omit, supabase, unwrap, type Tables } from '../lib/supabase'
-import { useAgreements, useCompany, useDesignations, useGrades } from '../lib/queries'
+import { selectable, useAgreements, useCompany, useContractTypes, useDesignations, useGrades, usePaymentModes } from '../lib/queries'
 import { useAuth } from '../lib/auth'
 import { currentPeriod, fcfa, monthBounds, monthLabel } from '../lib/format'
 import { Badge, Button, ErrorNote, Modal, PageHeader, Section, SelectField, Spinner, TextField } from '../components/ui'
@@ -26,6 +26,8 @@ export default function EmployeeDetailPage() {
   const company = useCompany()
   const designations = useDesignations()
   const agreements = useAgreements()
+  const contractTypes = useContractTypes()
+  const paymentModes = usePaymentModes()
 
   const emp = useQuery({
     queryKey: ['employee', id],
@@ -145,18 +147,18 @@ export default function EmployeeDetailPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <SelectField label="Emploi" value={form.designation_id ?? ''} onChange={set('designation_id')}>
               <option value="">—</option>
-              {(designations.data ?? []).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              {selectable(designations.data, (d) => d.id === form.designation_id).map((d) => <option key={d.id} value={d.id}>{d.name}{d.is_active ? '' : ' (désactivé)'}</option>)}
             </SelectField>
             <SelectField label="Type de contrat" value={form.employment_type ?? 'CDI'} onChange={set('employment_type')}>
-              {['CDI', 'CDD', 'COD', 'STAGE', 'APPRENTISSAGE', 'PRESTATION'].map((s) => <option key={s}>{s}</option>)}
+              {selectable(contractTypes.data, (c) => c.code === form.employment_type).map((c) => <option key={c.code} value={c.code}>{c.code} — {c.label}{c.is_active ? '' : ' (désactivé)'}</option>)}
             </SelectField>
             <SelectField label="Convention collective" className="sm:col-span-2" value={form.agreement_code ?? ''} onChange={(e) => setForm((f) => ({ ...f, agreement_code: e.target.value || null, grade_id: null }))}>
               <option value="">—</option>
-              {(agreements.data ?? []).map((a) => <option key={a.code} value={a.code}>{a.name}</option>)}
+              {selectable(agreements.data, (a) => a.code === form.agreement_code).map((a) => <option key={a.code} value={a.code}>{a.name}{a.is_active ? '' : ' (désactivée)'}</option>)}
             </SelectField>
             <SelectField label="Catégorie" className="sm:col-span-2" value={form.grade_id ?? ''} onChange={set('grade_id')} disabled={!form.agreement_code}>
               <option value="">—</option>
-              {(grades.data ?? []).map((g) => (
+              {selectable(grades.data, (g) => g.id === form.grade_id).map((g) => (
                 <option key={g.id} value={g.id}>{g.code} — {g.staff_status}{g.grade_class ? ` (classe ${g.grade_class})` : ''} — {fcfa(g.base_salary)} F</option>
               ))}
             </SelectField>
@@ -178,7 +180,7 @@ export default function EmployeeDetailPage() {
         <Section title="Paiement">
           <div className="grid gap-3 sm:grid-cols-2">
             <SelectField label="Mode de paiement" value={form.payment_mode ?? 'espèces'} onChange={set('payment_mode')}>
-              {['espèces', 'virement', 'chèque', 'mobile money'].map((s) => <option key={s}>{s}</option>)}
+              {selectable(paymentModes.data, (m) => m.code === form.payment_mode).map((m) => <option key={m.code} value={m.code}>{m.label}{m.is_active ? '' : ' (désactivé)'}</option>)}
             </SelectField>
             <TextField label="Banque" value={form.bank_name ?? ''} onChange={set('bank_name')} />
             <TextField label="RIB" className="sm:col-span-2" value={form.bank_account ?? ''} onChange={set('bank_account')} />

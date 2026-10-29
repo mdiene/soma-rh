@@ -58,6 +58,27 @@ export function useLeaveTypes() {
   })
 }
 
+/** Types de contrat (référentiel administrable, lot 7). */
+export function useContractTypes() {
+  return useQuery({
+    queryKey: ['contract_types'],
+    queryFn: async () => unwrap(await supabase.from('contract_types').select('*').order('sort_order')),
+  })
+}
+
+/** Modes de paiement (référentiel administrable, lot 7). */
+export function usePaymentModes() {
+  return useQuery({
+    queryKey: ['payment_modes'],
+    queryFn: async () => unwrap(await supabase.from('payment_modes').select('*').order('sort_order')),
+  })
+}
+
+/** Valeurs proposées à la saisie : actives, plus la valeur actuelle si elle a été désactivée. */
+export function selectable<T extends { is_active: boolean }>(rows: T[] | undefined, isCurrent: (r: T) => boolean): T[] {
+  return (rows ?? []).filter((r) => r.is_active || isCurrent(r))
+}
+
 export function usePayrollEntries() {
   return useQuery({
     queryKey: ['payroll_entries'],

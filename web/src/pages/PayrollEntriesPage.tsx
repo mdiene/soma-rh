@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, unwrap } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { useCompany, usePayrollEntries } from '../lib/queries'
+import { selectable, useCompany, usePaymentModes, usePayrollEntries } from '../lib/queries'
 import { currentPeriod, date, monthBounds, monthLabel } from '../lib/format'
 import { Badge, Button, Empty, ErrorNote, Modal, PageHeader, SelectField, Spinner, TextField } from '../components/ui'
 
@@ -48,6 +48,7 @@ function NewEntryModal({ open, onClose }: { open: boolean; onClose: () => void }
   const nav = useNavigate()
   const [period, setPeriod] = useState(currentPeriod())
   const [mode, setMode] = useState('espèces')
+  const paymentModes = usePaymentModes()
   const create = useMutation({
     mutationFn: async () => {
       const { start, end } = monthBounds(period)
@@ -61,7 +62,7 @@ function NewEntryModal({ open, onClose }: { open: boolean; onClose: () => void }
       <div className="grid gap-3 sm:grid-cols-2">
         <TextField label="Mois de paie" type="month" value={period.slice(0, 7)} onChange={(e) => setPeriod(`${e.target.value}-01`)} />
         <SelectField label="Mode de paiement" value={mode} onChange={(e) => setMode(e.target.value)}>
-          {['espèces', 'virement', 'chèque', 'mobile money'].map((s) => <option key={s}>{s}</option>)}
+          {selectable(paymentModes.data, (m) => m.code === mode).map((m) => <option key={m.code} value={m.code}>{m.label}</option>)}
         </SelectField>
       </div>
       <div className="mt-3"><ErrorNote error={create.error} /></div>

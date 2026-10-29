@@ -155,6 +155,7 @@ export type Database = {
           old_data: Json | null
           reason: string | null
           record_id: string | null
+          record_key: string | null
           table_name: string
         }
         Insert: {
@@ -166,6 +167,7 @@ export type Database = {
           old_data?: Json | null
           reason?: string | null
           record_id?: string | null
+          record_key?: string | null
           table_name: string
         }
         Update: {
@@ -177,6 +179,7 @@ export type Database = {
           old_data?: Json | null
           reason?: string | null
           record_id?: string | null
+          record_key?: string | null
           table_name?: string
         }
         Relationships: []
@@ -185,17 +188,26 @@ export type Database = {
         Row: {
           code: string
           created_at: string
+          is_active: boolean
           name: string
+          updated_at: string
+          updated_by: string | null
         }
         Insert: {
           code: string
           created_at?: string
+          is_active?: boolean
           name: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           code?: string
           created_at?: string
+          is_active?: boolean
           name?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -247,6 +259,45 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_types: {
+        Row: {
+          code: string
+          created_at: string
+          is_active: boolean
+          label: string
+          nature: string
+          precarity_eligible: boolean
+          severance_eligible: boolean
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          is_active?: boolean
+          label: string
+          nature?: string
+          precarity_eligible?: boolean
+          severance_eligible?: boolean
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          is_active?: boolean
+          label?: string
+          nature?: string
+          precarity_eligible?: boolean
+          severance_eligible?: boolean
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           company_id: string
@@ -290,17 +341,26 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_active: boolean
           name: string
+          updated_at: string
+          updated_by: string | null
         }
         Insert: {
           created_at?: string
           id?: string
+          is_active?: boolean
           name: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          is_active?: boolean
           name?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -314,7 +374,10 @@ export type Database = {
           grade_class: string | null
           hourly_rate: number
           id: string
+          is_active: boolean
           staff_status: string
+          updated_at: string
+          updated_by: string | null
         }
         Insert: {
           agreement_code: string
@@ -325,7 +388,10 @@ export type Database = {
           grade_class?: string | null
           hourly_rate: number
           id?: string
+          is_active?: boolean
           staff_status: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           agreement_code?: string
@@ -336,7 +402,10 @@ export type Database = {
           grade_class?: string | null
           hourly_rate?: number
           id?: string
+          is_active?: boolean
           staff_status?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -526,11 +595,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "employees_employment_type_fkey"
+            columns: ["employment_type"]
+            isOneToOne: false
+            referencedRelation: "contract_types"
+            referencedColumns: ["code"]
+          },
+          {
             foreignKeyName: "employees_grade_id_fkey"
             columns: ["grade_id"]
             isOneToOne: false
             referencedRelation: "employee_grades"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_payment_mode_fkey"
+            columns: ["payment_mode"]
+            isOneToOne: false
+            referencedRelation: "payment_modes"
+            referencedColumns: ["code"]
           },
         ]
       }
@@ -738,6 +821,36 @@ export type Database = {
           is_paid?: boolean
           max_days_per_year?: number | null
           name?: string
+        }
+        Relationships: []
+      }
+      payment_modes: {
+        Row: {
+          code: string
+          created_at: string
+          is_active: boolean
+          label: string
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          is_active?: boolean
+          label: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -1763,6 +1876,10 @@ export type Database = {
         }
       }
       preview_employee_number: { Args: never; Returns: string }
+      reference_usage: {
+        Args: { p_key: string; p_table: string }
+        Returns: Json
+      }
       run_payroll_entry: { Args: { p_payroll_entry_id: string }; Returns: Json }
       severance_coefficient: {
         Args: { p_entry: string; p_exit: string; p_kind: string }
@@ -1786,6 +1903,13 @@ export type Database = {
         Returns: number
       }
       tax_slab_at: { Args: { p_date: string }; Returns: string }
+      user_emails: {
+        Args: { p_ids: string[] }
+        Returns: {
+          email: string
+          id: string
+        }[]
+      }
     }
     Enums: {
       approval_status: "pending" | "approved" | "rejected"

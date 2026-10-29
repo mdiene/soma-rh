@@ -8,10 +8,13 @@ import { useAuth, type Role } from '../lib/auth'
 import { useAgreements, useCompany, useComponents, useEmployees, useGrades } from '../lib/queries'
 import { date, fcfa, num, pct } from '../lib/format'
 import { DataTable } from '../components/DataTable'
+import { AuditLogView, ReferentialManager, type RefConfig, type RefTable } from '../components/ReferentialManager'
 import { Button, ErrorNote, Modal, PageHeader, Section, SelectField, Spinner, TextField } from '../components/ui'
 
 const TABS = [
   { id: 'acces', label: 'Accès' },
+  { id: 'referentiels', label: 'Référentiels RH' },
+  { id: 'journal', label: 'Journal des modifications' },
   { id: 'paie', label: 'Taux et plafonds' },
   { id: 'baremes', label: 'Barèmes IR et TRIMF' },
   { id: 'rubriques', label: 'Rubriques de paie' },
@@ -24,7 +27,7 @@ export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('acces')
   return (
     <>
-      <PageHeader title="Paramètres" description="Comptes et rôles, constantes de paie, barèmes, rubriques et grilles des conventions collectives." />
+      <PageHeader title="Paramètres" description="Comptes et rôles, référentiels RH, constantes de paie, barèmes, rubriques et grilles des conventions collectives." />
       <div className="no-print mb-5 flex flex-wrap gap-1 border-b border-line" role="tablist">
         {TABS.map((t) => (
           <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
@@ -34,6 +37,8 @@ export default function SettingsPage() {
         ))}
       </div>
       {tab === 'acces' && <AccessTab />}
+      {tab === 'referentiels' && <ReferentialsTab />}
+      {tab === 'journal' && <AuditLogView />}
       {tab === 'paie' && <PayrollSettingsTab />}
       {tab === 'baremes' && <TaxTab />}
       {tab === 'rubriques' && <ComponentsTab />}
@@ -276,6 +281,88 @@ function ComponentsTab() {
         <div className="mt-3"><ErrorNote error={add.error} /></div>
       </Modal>
     </>
+  )
+}
+
+/* ------------------------------------------------------------- référentiels */
+const NATURES = [
+  { value: 'TRAVAIL', label: 'Contrat de travail (IR, TRIMF, IPRES, CFCE, AF)' },
+  { value: 'PRESTATION', label: 'Prestation de services (BRS)' },
+  { value: 'STAGE', label: 'Stage' },
+  { value: 'APPRENTISSAGE', label: 'Apprentissage' },
+  { value: 'AUTRE', label: 'Autre (ouvrier journalier…)' },
+]
+const STAFF_STATUSES = ['Employés', 'Ouvriers', 'Agents de maîtrise', 'Cadres', 'Chauffeurs']
+
+function ReferentialsTab() {
+  const agreements = useAgreements()
+  const [which, setWhich] = useState<RefTable>('designations')
+  const agreementOptions = (agreements.data ?? []).map((a) => ({ value: a.code, label: a.name }))
+  const configs: Record<RefTable, RefConfig> = {
+    designations: {
+      table: 'designations', title: 'Emplois', description: 'Intitulés de poste proposés dans la fiche salarié et imprimés sur les bulletins.',
+      keyField: 'id', labelField: 'name', orderBy: 'name',
+      fields: [{ key: 'name', label: 'Emploi', required: true }],
+    },
+    contract_types: {
+      table: 'contract_types', title: 'Types de contrat',
+      description: 'La nature détermine les cotisations appliquées par le moteur de paie ; la précarité et l’indemnité de licenciement en dépendent.',
+      keyField: 'code', labelField: 'label', orderBy: 'sort_order',
+      fields: [
+        { key: 'code', label: 'Code', required: true, createOnly: true, upper: true, hint: 'Majuscules, ex. CDD' },
+        { key: 'label', label: 'Libellé', required: true },
+        { key: 'nature', label: 'Nature', type: 'select', options: NATURES, required: true },
+        { key: 'sort_order', label: 'Ordre d’affichage', type: 'number', list: false },
+        { key: 'precarity_eligible', label: 'Indemnité de précarité (fin de contrat)', short: 'Précarité', type: 'checkbox' },
+        { key: 'severance_eligible', label: 'Indemnité de licenciement / départ à la retraite', short: 'Licenciement / retraite', type: 'checkbox' },
+      ],
+    },
+    collective_agreements: {
+      table: 'collective_agreements', title: 'Conventions collectives', description: 'Conventions dont dépendent les grilles de catégories.',
+      keyField: 'code', labelField: 'name', orderBy: 'name',
+      fields: [
+        { key: 'code', label: 'Code', required: true, createOnly: true, upper: true },
+        { key: 'name', label: 'Libellé', required: true },
+      ],
+    },
+    employee_grades: {
+      table: 'employee_grades', title: 'Catégories', description: 'Catégories et salaires de base des grilles conventionnelles.',
+      keyField: 'id', labelField: 'code', orderBy: 'base_salary',
+      filter: { field: 'agreement_code', label: 'Convention collective', options: agreementOptions },
+      fields: [
+        { key: 'agreement_code', label: 'Convention', type: 'select', options: agreementOptions, required: true, list: false },
+        { key: 'code', label: 'Catégorie', required: true },
+        { key: 'staff_status', label: 'Statut', suggestions: STAFF_STATUSES, hint: '« Cadres » déclenche l’IPRES régime cadres' },
+        { key: 'grade_class', label: 'Classe' },
+        { key: 'base_salary', label: 'Salaire de base', type: 'number', required: true },
+        { key: 'hourly_rate', label: 'Taux horaire', type: 'number' },
+        { key: 'effective_from', label: 'En vigueur depuis', type: 'date', list: false },
+      ],
+    },
+    payment_modes: {
+      table: 'payment_modes', title: 'Modes de paiement', description: 'Modes de règlement du salaire proposés dans la fiche salarié et le traitement de paie.',
+      keyField: 'code', labelField: 'label', orderBy: 'sort_order',
+      fields: [
+        { key: 'code', label: 'Code', required: true, createOnly: true, hint: 'ex. wave' },
+        { key: 'label', label: 'Libellé', required: true },
+        { key: 'sort_order', label: 'Ordre d’affichage', type: 'number', list: false },
+      ],
+    },
+  }
+  const order: RefTable[] = ['designations', 'contract_types', 'collective_agreements', 'employee_grades', 'payment_modes']
+  return (
+    <div className="grid gap-4 lg:grid-cols-[13rem_1fr]">
+      <nav aria-label="Référentiels" className="flex flex-row flex-wrap gap-1 lg:flex-col">
+        {order.map((t) => (
+          <button key={t} type="button" aria-current={which === t} onClick={() => setWhich(t)}
+            className={clsx('rounded px-3 py-2 text-left text-sm', which === t ? 'bg-river text-white' : 'text-ink-soft hover:bg-white hover:text-ink')}>
+            {configs[t].title}
+          </button>
+        ))}
+        <p className="mt-2 hidden text-xs text-ink-muted lg:block">Les taux de cotisation et plafonds sont dans l’onglet « Taux et plafonds ».</p>
+      </nav>
+      {which === 'employee_grades' && agreements.isLoading ? <Spinner /> : <ReferentialManager key={which} config={configs[which]} />}
+    </div>
   )
 }
 
