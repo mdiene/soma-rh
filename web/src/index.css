@@ -61,4 +61,15 @@
   .slip { break-after: page; font-size: 10.5px; }
   .slip:last-child { break-after: auto; }
   main { padding: 0 !important; }
+  /* états : paysage, en-têtes répétés sur chaque page, pas de positionnement figé */
+  .print-landscape { page: etat; }
+  .grouped-table { font-size: 8.5px; width: 100% !important; }
+  .grouped-table th, .grouped-table td { position: static !important; box-shadow: none !important; padding: 2px 3px !important; }
+  /* largeurs fixes des colonnes figées libérées à l'impression */
+  .grouped-table th[style], .grouped-table td[style] { min-width: 0 !important; max-width: none !important; width: auto !important; }
+  .grouped-table thead { display: table-header-group; }
+  .grouped-table thead th { white-space: normal !important; vertical-align: bottom; }
+  .grouped-table tfoot { display: table-footer-group; }
+  .grouped-table tr { break-inside: avoid; }
 }
+@page etat { size: A4 landscape; margin: 8mm; }

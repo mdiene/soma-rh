@@ -1,13 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
-import { createColumnHelper } from '@tanstack/react-table'
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase, unwrap, type Views } from '../lib/supabase'
 import { usePayrollEntries } from '../lib/queries'
-import { fcfa, monthLabel, pct } from '../lib/format'
-import { DataTable } from '../components/DataTable'
-import { GroupedTable, type GBlock, type GCol } from '../components/GroupedTable'
+import { fcfa, monthLabel } from '../lib/format'
+import { GroupedTable, type Check, type GBlock, type GCol } from '../components/GroupedTable'
 import { Empty, ErrorNote, PageHeader, SelectField, Spinner } from '../components/ui'
+
+/**
+ * États et déclarations : livre de paie, état résumé des cotisations, charges patronales
+ * et écritures comptables. Chaque état utilise le même tableau groupé : blocs fonctionnels
+ * colorés, en-têtes figés, sous-totaux, total général, contrôles de cohérence, export CSV.
+ */
 
 type Reg = Views<'v_payroll_register'>
 type Contrib = Views<'v_contribution_summary'>
@@ -21,76 +25,128 @@ const TABS = [
 ] as const
 type Tab = (typeof TABS)[number]['id']
 
-const rc = createColumnHelper<Reg>()
-const sumOf = (rows: Reg[], k: keyof Reg) => rows.reduce((s, r) => s + Number(r[k] ?? 0), 0)
-const m = (k: keyof Reg, header: string) => rc.accessor((r) => Number(r[k] ?? 0), {
-  id: String(k), header, meta: { align: 'right' },
-  cell: (c) => fcfa(c.getValue()),
-  footer: (ctx) => fcfa(sumOf(ctx.table.getFilteredRowModel().rows.map((r) => r.original), k)),
-})
+/* ----------------------------------------------------------- aides de colonnes */
+function moneyOf<T>(id: keyof T, header: string, opts: Partial<GCol<T>> = {}): GCol<T> {
+  return { id: String(id), header, kind: 'money', value: (r) => Number(r[id] ?? 0), ...opts }
+}
+function textOf<T>(id: keyof T, header: string, stickyWidth?: number): GCol<T> {
+  return { id: String(id), header, kind: 'text', stickyWidth, value: (r) => (r[id] as string | null) ?? '' }
+}
+const regMoney = (id: keyof Reg, header: string, title?: string) => moneyOf<Reg>(id, header, { title })
 
-/** Livre de paie : sept blocs fonctionnels (cahier des charges, lot 1). */
-const money = (id: keyof Reg, header: string, title?: string): GCol<Reg> => ({ id: String(id), header, title, kind: 'money', value: (r) => Number(r[id] ?? 0) })
-const text = (id: keyof Reg, header: string, stickyWidth?: number): GCol<Reg> => ({ id: String(id), header, kind: 'text', stickyWidth, value: (r) => (r[id] as string | null) ?? '' })
+const identity: GBlock<Reg> = { id: 'ident', label: 'Identification', tone: 'neutral', columns: [
+  textOf<Reg>('employee_number', 'Matricule', 84), textOf<Reg>('employee_name', 'Salarié', 210),
+  textOf<Reg>('designation', 'Emploi'), textOf<Reg>('grade_code', 'Catégorie'), textOf<Reg>('employment_type', 'Contrat'),
+] }
 
+/** Livre de paie : sept blocs fonctionnels. */
 const registerBlocks: GBlock<Reg>[] = [
-  { id: 'ident', label: 'Identification', tone: 'neutral', columns: [
-    text('employee_number', 'Matricule', 84), text('employee_name', 'Salarié', 210),
-    text('designation', 'Emploi'), text('grade_code', 'Catégorie'), text('employment_type', 'Contrat'),
-  ] },
+  identity,
   { id: 'remu', label: 'Rémunération', tone: 'river', columns: [
-    money('base_salary', 'Salaire de base'), money('sursalaire', 'Sursalaire'), money('seniority_bonus', 'Prime anc.'),
-    money('variable_gross', 'Primes'), money('leave_allowance', 'Alloc. congé'), money('precarity_allowance', 'Ind. précarité', 'Indemnité de fin de contrat payée le mois de sortie'),
-    money('overtime_amount', 'Heures sup.'), money('gross_pay', 'Brut'),
+    regMoney('base_salary', 'Salaire de base'), regMoney('sursalaire', 'Sursalaire'), regMoney('seniority_bonus', 'Prime anc.'),
+    regMoney('variable_gross', 'Primes'), regMoney('leave_allowance', 'Alloc. congé'),
+    regMoney('precarity_allowance', 'Ind. précarité', 'Indemnité de fin de contrat payée le mois de sortie'),
+    regMoney('overtime_amount', 'Heures sup.'), regMoney('gross_pay', 'Brut'),
   ] },
   { id: 'ret', label: 'Retenues salariales', tone: 'signal', columns: [
-    money('income_tax', 'IR'), money('trimf', 'TRIMF'), money('ipres_rg_employee', 'IPRES RG'), money('ipres_rc_employee', 'IPRES RC'),
-    money('ipm_employee', 'IPM'), money('brs', 'BRS'), money('total_employee_deductions', 'Total retenues'),
-    money('total_net_deductions', 'Retenues diverses', 'Avances, prêts et autres retenues sur le net'),
+    regMoney('income_tax', 'IR'), regMoney('trimf', 'TRIMF'), regMoney('ipres_rg_employee', 'IPRES RG'), regMoney('ipres_rc_employee', 'IPRES RC'),
+    regMoney('ipm_employee', 'IPM'), regMoney('brs', 'BRS'), regMoney('total_employee_deductions', 'Total retenues'),
+    regMoney('total_net_deductions', 'Retenues diverses', 'Avances, prêts et autres retenues sur le net'),
   ] },
   { id: 'pat', label: 'Cotisations patronales', tone: 'ink', columns: [
-    money('css_af', 'CSS prest. fam.'), money('css_at', 'CSS acc. travail'), money('ipres_rg_employer', 'IPRES RG'),
-    money('ipres_rc_employer', 'IPRES RC'), money('ipm_employer', 'IPM'), money('cfce', 'CFCE'), money('employer_charges', 'Total patronal'),
+    regMoney('css_af', 'CSS prest. fam.'), regMoney('css_at', 'CSS acc. travail'), regMoney('ipres_rg_employer', 'IPRES RG'),
+    regMoney('ipres_rc_employer', 'IPRES RC'), regMoney('ipm_employer', 'IPM'), regMoney('cfce', 'CFCE'), regMoney('employer_charges', 'Total patronal'),
   ] },
   { id: 'prov', label: 'Provisions du mois', tone: 'phosphate', columns: [
-    money('leave_provision', 'Prov. congé'), money('precarity_provision', 'Prov. précarité'),
+    regMoney('leave_provision', 'Prov. congé'), regMoney('precarity_provision', 'Prov. précarité'),
   ] },
   { id: 'cumul', label: 'Cumuls annuels validés', tone: 'phosphateSoft', columns: [
-    money('ytd_trimf', 'Cumul TRIMF'), money('ytd_ipres_rg', 'Cumul IPRES RG', 'Parts salariale et patronale'),
-    money('ytd_ipres_rc', 'Cumul IPRES RC', 'Parts salariale et patronale'),
-    money('ytd_leave_provision', 'Cumul prov. congé'), money('ytd_precarity_provision', 'Cumul prov. précarité'),
+    regMoney('ytd_trimf', 'Cumul TRIMF'), regMoney('ytd_ipres_rg', 'Cumul IPRES RG', 'Parts salariale et patronale'),
+    regMoney('ytd_ipres_rc', 'Cumul IPRES RC', 'Parts salariale et patronale'),
+    regMoney('ytd_leave_provision', 'Cumul prov. congé'), regMoney('ytd_precarity_provision', 'Cumul prov. précarité'),
   ] },
   { id: 'net', label: 'Net à payer et masse salariale', tone: 'riverDark', columns: [
-    money('net_remuneration', 'Rém. nette'), money('total_non_taxable', 'Indemnités', 'Transport, panier, kilométrique et autres indemnités non imposables'),
-    money('net_pay', 'Net à payer'), money('payroll_cost', 'Masse salariale'),
+    regMoney('net_remuneration', 'Rém. nette'),
+    regMoney('total_non_taxable', 'Indemnités', 'Transport, panier, kilométrique et autres indemnités non imposables'),
+    regMoney('net_pay', 'Net à payer'), regMoney('payroll_cost', 'Masse salariale'),
   ] },
 ]
-const employerCols = [
-  rc.accessor('employee_number', { header: 'Matricule', footer: 'Total' }),
-  rc.accessor('employee_name', { header: 'Salarié' }),
-  m('css_af', 'Allocations familiales'), m('css_at', 'Accident du travail'), m('ipres_rg_employer', 'IPRES RG'),
-  m('ipres_rc_employer', 'IPRES RC'), m('ipm_employer', 'IPM'), m('cfce', 'CFCE'), m('employer_charges', 'Total'),
+
+/** Charges patronales par salarié. */
+const employerBlocks: GBlock<Reg>[] = [
+  { ...identity, columns: [identity.columns[0], identity.columns[1], textOf<Reg>('grade_code', 'Catégorie'), textOf<Reg>('staff_status', 'Statut')] },
+  { id: 'remu', label: 'Rémunération', tone: 'river', columns: [regMoney('gross_pay', 'Brut')] },
+  { id: 'sal', label: 'Cotisations salariales', tone: 'inkSoft', columns: [
+    regMoney('ipres_rg_employee', 'IPRES RG'), regMoney('ipres_rc_employee', 'IPRES RC'), regMoney('ipm_employee', 'IPM'),
+  ] },
+  { id: 'pat', label: 'Cotisations patronales', tone: 'ink', columns: [
+    regMoney('css_af', 'Prest. familiales'), regMoney('css_at', 'Accident du travail'), regMoney('ipres_rg_employer', 'IPRES RG'),
+    regMoney('ipres_rc_employer', 'IPRES RC'), regMoney('ipm_employer', 'IPM'), regMoney('cfce', 'CFCE'),
+  ] },
+  { id: 'prov', label: 'Provisions du mois', tone: 'phosphate', columns: [regMoney('leave_provision', 'Prov. congé'), regMoney('precarity_provision', 'Prov. précarité')] },
+  { id: 'tot', label: 'Totaux', tone: 'riverDark', columns: [regMoney('employer_charges', 'Total patronal'), regMoney('payroll_cost', 'Masse salariale')] },
 ]
 
-const cc = createColumnHelper<Contrib>()
-const csum = (rows: Contrib[], k: keyof Contrib) => rows.reduce((s, r) => s + Number(r[k] ?? 0), 0)
-const contribCols = [
-  cc.accessor('label', { header: 'Rubrique', footer: 'Total' }),
-  cc.accessor('employee_rate', { header: 'Taux salarial', meta: { align: 'right' }, cell: (c) => c.getValue() ? pct(c.getValue()) : '' }),
-  cc.accessor('employer_rate', { header: 'Taux patronal', meta: { align: 'right' }, cell: (c) => c.getValue() ? pct(c.getValue()) : '' }),
-  cc.accessor('base_total', { header: 'Assiette', meta: { align: 'right' }, cell: (c) => fcfa(c.getValue()) }),
-  ...(['employee_amount', 'employer_amount', 'total_amount'] as const).map((k, i) => cc.accessor(k, {
-    header: ['Montant salarial', 'Montant patronal', 'Montant global'][i], meta: { align: 'right' },
-    cell: (c) => fcfa(c.getValue()),
-    footer: (ctx) => fcfa(csum(ctx.table.getFilteredRowModel().rows.map((r) => r.original), k)),
-  })),
-  cc.accessor('headcount', { header: 'Effectif', meta: { align: 'right' } }),
+/** Caisse ou administration destinataire de chaque rubrique. */
+const CAISSE: Record<string, string> = {
+  IPRES_RG: 'IPRES', IPRES_RC: 'IPRES', CSS_AF: 'Caisse de sécurité sociale', CSS_AT: 'Caisse de sécurité sociale',
+  IPM: 'IPM', IR: 'Impôts (DGID)', TRIMF: 'Impôts (DGID)', CFCE: 'Impôts (DGID)', BRS: 'Impôts (DGID)',
+}
+type ContribRow = Contrib & { caisse: string }
+const rate = (id: keyof Contrib, header: string): GCol<ContribRow> => ({ id: String(id), header, kind: 'rate', sum: false, value: (r) => (r[id] ? Number(r[id]) : null) })
+const contribBlocks: GBlock<ContribRow>[] = [
+  { id: 'ident', label: 'Identification', tone: 'neutral', columns: [
+    { id: 'label', header: 'Rubrique', kind: 'text', stickyWidth: 230, value: (r) => r.label ?? '' },
+    { id: 'caisse', header: 'Caisse', kind: 'text', value: (r) => r.caisse },
+  ] },
+  { id: 'taux', label: 'Taux', tone: 'inkSoft', columns: [rate('employee_rate', 'Salarial'), rate('employer_rate', 'Patronal')] },
+  { id: 'assiette', label: 'Assiette', tone: 'river', columns: [
+    moneyOf<ContribRow>('base_total', 'Assiette totale', { sum: false, title: 'Les assiettes de rubriques différentes ne s\'additionnent pas' }),
+  ] },
+  { id: 'sal', label: 'Cotisations salariales', tone: 'signal', columns: [moneyOf<ContribRow>('employee_amount', 'Montant salarial')] },
+  { id: 'pat', label: 'Cotisations patronales', tone: 'ink', columns: [moneyOf<ContribRow>('employer_amount', 'Montant patronal')] },
+  { id: 'tot', label: 'Totaux', tone: 'riverDark', columns: [
+    moneyOf<ContribRow>('total_amount', 'Montant global'),
+    { id: 'headcount', header: 'Effectif', kind: 'int', sum: false, value: (r) => Number(r.headcount ?? 0) },
+  ] },
 ]
+
+type JournalRow = Journal & { journal_label: string }
+const journalBlocks: GBlock<JournalRow>[] = [
+  { id: 'ident', label: 'Écriture', tone: 'neutral', columns: [
+    { id: 'account', header: 'Compte', kind: 'text', stickyWidth: 84, value: (r) => r.account ?? '' },
+    { id: 'label', header: 'Libellé', kind: 'text', stickyWidth: 320, value: (r) => r.label ?? '' },
+  ] },
+  { id: 'tot', label: 'Montants', tone: 'riverDark', columns: [
+    { id: 'debit', header: 'Débit', kind: 'money', value: (r) => (Number(r.debit) ? Number(r.debit) : null) },
+    { id: 'credit', header: 'Crédit', kind: 'money', value: (r) => (Number(r.credit) ? Number(r.credit) : null) },
+  ] },
+]
+
+/* --------------------------------------------------------- contrôles de cohérence */
+const sum = <T,>(rows: T[], f: (r: T) => unknown) => rows.reduce((s, r) => s + Number(f(r) ?? 0), 0)
+const TOL = 0.01 // F CFA : comparaison en pleine précision
+function check(label: string, a: number, b: number): Check {
+  const gap = Math.abs(a - b)
+  return { label, ok: gap <= TOL, detail: gap <= TOL ? `${fcfa(a)} F` : `écart de ${gap.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} F (${fcfa(a)} / ${fcfa(b)})` }
+}
+function payrollChecks(reg: Reg[], contrib: Contrib[] | undefined): Check[] {
+  const out: Check[] = [
+    check('Net à payer reconstitué', sum(reg, (r) => Number(r.net_remuneration) + Number(r.total_non_taxable) - Number(r.total_net_deductions) + Number(r.previous_rounding ?? 0)), sum(reg, (r) => r.net_pay)),
+    check('Masse salariale reconstituée', sum(reg, (r) => Number(r.gross_pay) + Number(r.employer_charges) + Number(r.total_non_taxable) + Number(r.previous_rounding ?? 0)), sum(reg, (r) => r.payroll_cost)),
+  ]
+  if (contrib) {
+    out.push(check('Retenues = état des cotisations', sum(reg, (r) => r.total_employee_deductions), sum(contrib, (c) => c.employee_amount)))
+    out.push(check('Charges patronales = état des cotisations', sum(reg, (r) => r.employer_charges), sum(contrib, (c) => c.employer_amount)))
+  }
+  return out
+}
 
 export default function ReportsPage() {
   const entries = usePayrollEntries()
   const [entryId, setEntryId] = useState('')
   const [tab, setTab] = useState<Tab>('livre')
+  const [byStatus, setByStatus] = useState(false)
   useEffect(() => { if (!entryId && entries.data?.length) setEntryId(entries.data.find((e) => e.status !== 'Annulée')?.id ?? '') }, [entries.data, entryId])
   const entry = entries.data?.find((e) => e.id === entryId)
 
@@ -99,7 +155,7 @@ export default function ReportsPage() {
     queryFn: async () => unwrap(await supabase.from('v_payroll_register').select('*').eq('payroll_entry_id', entryId).order('employee_number')),
   })
   const contrib = useQuery({
-    queryKey: ['contrib', entryId], enabled: !!entryId && tab === 'cotisations',
+    queryKey: ['contrib', entryId], enabled: !!entryId,
     queryFn: async () => unwrap(await supabase.from('v_contribution_summary').select('*').eq('payroll_entry_id', entryId).order('sort_order')),
   })
   const journal = useQuery({
@@ -108,11 +164,36 @@ export default function ReportsPage() {
   })
   const suffix = entry ? entry.period_start.slice(0, 7) : ''
 
+  const regRows = useMemo(() => reg.data ?? [], [reg.data])
+  const checks = useMemo(() => payrollChecks(regRows, contrib.data), [regRows, contrib.data])
+  const contribRows: ContribRow[] = useMemo(() => (contrib.data ?? []).map((c) => ({ ...c, caisse: CAISSE[c.component_code ?? ''] ?? 'Autres' })), [contrib.data])
+  const journalRows: JournalRow[] = useMemo(() => (journal.data ?? []).map((j) => ({ ...j, journal_label: (j.journal ?? '').replace(/^\d-/, '') })), [journal.data])
+  const journalChecks: Check[] = useMemo(() => {
+    const names = [...new Set(journalRows.map((j) => j.journal_label))]
+    const brut = sum(journalRows.filter((j) => ['661', '6057'].includes(j.account ?? '')), (j) => j.debit)
+    return [
+      ...names.map((n) => {
+        const l = journalRows.filter((j) => j.journal_label === n)
+        return check(`${n} équilibré`, sum(l, (j) => j.debit), sum(l, (j) => j.credit))
+      }),
+      ...(regRows.length ? [check('Brut comptabilisé = livre de paie', brut, sum(regRows, (r) => r.gross_pay))] : []),
+    ]
+  }, [journalRows, regRows])
+
+  const statusGroup = byStatus ? { key: (r: Reg) => r.staff_status ?? '—', label: (r: Reg) => r.staff_status ?? 'Sans statut' } : undefined
+  const groupToggle = (
+    <label className="inline-flex items-center gap-2 text-sm">
+      <input type="checkbox" className="h-4 w-4 accent-[#0F6E6A]" checked={byStatus} onChange={(e) => setByStatus(e.target.checked)} />
+      Sous-totaux par statut
+    </label>
+  )
+  const notValidated = entry && entry.status !== 'Validée'
+
   return (
     <>
       <PageHeader
         title="États et déclarations"
-        description="Livre de paie, cotisations sociales et fiscales, charges patronales et écritures comptables du mois. Chaque état s'exporte en CSV pour Excel."
+        description="Livre de paie, cotisations sociales et fiscales, charges patronales et écritures comptables du mois. Chaque état s'imprime et s'exporte en CSV pour Excel."
         actions={
           <SelectField label="Traitement" value={entryId} onChange={(e) => setEntryId(e.target.value)} className="min-w-[13rem]">
             {(entries.data ?? []).filter((e) => e.status !== 'Annulée').map((e) => <option key={e.id} value={e.id}>{monthLabel(e.period_start)} — {e.status}</option>)}
@@ -129,61 +210,37 @@ export default function ReportsPage() {
       </div>
       <ErrorNote error={entries.error || reg.error || contrib.error || journal.error} />
       {!entryId ? <Empty title="Aucun traitement de paie">Les états apparaissent dès qu'un traitement est calculé.</Empty> : (
-        <>
+        <div className="print-landscape">
+          {/* titre imprimé (la barre d'onglets n'est pas imprimée) */}
+          <h2 className="mb-2 hidden text-lg print:block">{TABS.find((t) => t.id === tab)?.label} — {entry ? monthLabel(entry.period_start) : ''}</h2>
           {tab === 'livre' && (reg.isLoading ? <Spinner /> : (
-            <GroupedTable rows={reg.data ?? []} blocks={registerBlocks} rowKey={(r) => r.salary_slip_id ?? r.employee_number ?? ''}
-              exportName={`livre-de-paie-${suffix}`}
-              notice={entry && entry.status !== 'Validée' ? (
+            <GroupedTable rows={regRows} blocks={registerBlocks} rowKey={(r) => r.salary_slip_id ?? r.employee_number ?? ''}
+              groupBy={statusGroup} toolbar={groupToggle} checks={checks} exportName={`livre-de-paie-${suffix}`}
+              notice={notValidated ? (
                 <p className="rounded border border-phosphate bg-phosphate-light px-3 py-2 text-ink">
-                  Traitement « {entry.status} » : les montants du mois s'affichent, mais les cumuls annuels ne comprennent que les mois déjà validés.
+                  Traitement « {entry!.status} » : les montants du mois s'affichent, mais les cumuls annuels ne comprennent que les mois déjà validés.
                 </p>
               ) : (
                 <p className="text-xs text-ink-muted">Cumuls du 1<sup>er</sup> janvier au mois affiché, bulletins validés uniquement. Montants arrondis à l'affichage ; totaux calculés en pleine précision.</p>
               )} />
           ))}
-          {tab === 'patronal' && (reg.isLoading ? <Spinner /> : <DataTable data={reg.data ?? []} columns={employerCols} footer exportName={`charges-patronales-${suffix}`} />)}
-          {tab === 'cotisations' && (contrib.isLoading ? <Spinner /> : <DataTable data={contrib.data ?? []} columns={contribCols} footer exportName={`cotisations-${suffix}`} />)}
-          {tab === 'compta' && (journal.isLoading ? <Spinner /> : <JournalView rows={journal.data ?? []} />)}
-        </>
+          {tab === 'patronal' && (reg.isLoading ? <Spinner /> : (
+            <GroupedTable rows={regRows} blocks={employerBlocks} rowKey={(r) => r.salary_slip_id ?? r.employee_number ?? ''}
+              groupBy={statusGroup} toolbar={groupToggle} checks={checks.slice(1)} exportName={`charges-patronales-${suffix}`} />
+          ))}
+          {tab === 'cotisations' && (contrib.isLoading ? <Spinner /> : (
+            <GroupedTable rows={contribRows} blocks={contribBlocks} rowKey={(r) => r.component_code ?? r.label ?? ''}
+              groupBy={{ key: (r) => r.caisse, label: (r) => r.caisse }} checks={checks.slice(2)}
+              searchPlaceholder="Rechercher une rubrique, une caisse…" exportName={`cotisations-${suffix}`}
+              notice={<p className="text-xs text-ink-muted">Sous-total par caisse (IPRES, Caisse de sécurité sociale, IPM, impôts) puis total général.</p>} />
+          ))}
+          {tab === 'compta' && (journal.isLoading ? <Spinner /> : (
+            <GroupedTable rows={journalRows} blocks={journalBlocks} rowKey={(r) => `${r.journal}-${r.line_no}`}
+              groupBy={{ key: (r) => r.journal ?? '', label: (r) => r.journal_label }} checks={journalChecks}
+              searchPlaceholder="Rechercher un compte, un libellé…" exportName={`ecritures-${suffix}`} />
+          ))}
+        </div>
       )}
     </>
-  )
-}
-
-function JournalView({ rows }: { rows: Journal[] }) {
-  const journals = [...new Set(rows.map((r) => r.journal))]
-  return (
-    <div className="grid gap-6 xl:grid-cols-2">
-      {journals.map((j) => {
-        const lines = rows.filter((r) => r.journal === j)
-        const d = lines.reduce((s, r) => s + Number(r.debit), 0)
-        const c = lines.reduce((s, r) => s + Number(r.credit), 0)
-        return (
-          <section key={j} className="panel overflow-hidden">
-            <h2 className="border-b border-line px-4 py-3 text-base">{j?.replace(/^\d-/, '')}</h2>
-            <table className="w-full text-sm">
-              <thead><tr className="table-head"><th className="px-3 py-1.5">Compte</th><th className="px-3 py-1.5">Libellé</th><th className="px-3 py-1.5 text-right">Débit</th><th className="px-3 py-1.5 text-right">Crédit</th></tr></thead>
-              <tbody>
-                {lines.map((l) => (
-                  <tr key={`${l.journal}-${l.line_no}`} className="border-b border-line/70">
-                    <td className="px-3 py-1.5 font-medium">{l.account}</td>
-                    <td className="px-3 py-1.5">{l.label}</td>
-                    <td className="px-3 py-1.5 text-right">{Number(l.debit) ? fcfa(l.debit) : ''}</td>
-                    <td className="px-3 py-1.5 text-right">{Number(l.credit) ? fcfa(l.credit) : ''}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-paper font-semibold">
-                  <td className="px-3 py-1.5" colSpan={2}>Total {Math.abs(d - c) < 0.5 ? '— équilibré' : '— écart'}</td>
-                  <td className="px-3 py-1.5 text-right">{fcfa(d)}</td>
-                  <td className="px-3 py-1.5 text-right">{fcfa(c)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </section>
-        )
-      })}
-    </div>
   )
 }
