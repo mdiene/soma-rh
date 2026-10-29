@@ -1,14 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { Trash2 } from 'lucide-react'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { Link } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useMemo, useState } from 'react'
 import { supabase, unwrap } from '../lib/supabase'
-import { fcfa, monthLabel, MONTHS } from '../lib/format'
+import { fcfa, monthLabel, MONTHS_SHORT } from '../lib/format'
 import { useAuth } from '../lib/auth'
 import { usePayrollEntries } from '../lib/queries'
+import { AnnualSynthesis } from '../components/AnnualSynthesis'
 import { DeletePayrollModal } from '../components/DeletePayrollModal'
-import { Button, Empty, ErrorNote, PageHeader, Section, SelectField, Spinner } from '../components/ui'
+import { Button, Empty, ErrorNote, Figure, PageHeader, Section, SelectField, Spinner } from '../components/ui'
 
 type Dashboard = {
   period: string
@@ -18,23 +19,48 @@ type Dashboard = {
   leaves_in_progress: number
   leave_requests_pending: number
   contracts_ending_60d: number
-  payroll: { slips: number; validated: number; gross: number; net: number; employer_charges: number; payroll_cost: number; income_tax: number }
+  payroll: {
+    slips: number; validated: number; gross: number; net: number; employer_charges: number; payroll_cost: number; income_tax: number
+    trimf: number; employee_deductions: number; net_deductions: number; ipres_rg: number; ipres_rc: number
+    css: number; cfce: number; leave_provision: number; precarity_provision: number
+  }
   trend: { period: string; gross: number; net: number; payroll_cost: number; slips: number }[]
 }
+
+type View = 'mensuelle' | 'annuelle'
 
 export default function DashboardPage() {
   const { roles, can } = useAuth()
   const entries = usePayrollEntries()
-  const [period, setPeriod] = useState<string>('')
   const [confirmDelete, setConfirmDelete] = useState(false)
-  useEffect(() => {
-    if (!period && entries.data) setPeriod(entries.data[0]?.period_start ?? new Date().toISOString().slice(0, 8) + '01')
-  }, [entries.data, period])
+  // vue, année et mois dans l'URL : changement sans rechargement, lien partageable
+  const [params, setParams] = useSearchParams()
+  const view: View = params.get('vue') === 'annuelle' ? 'annuelle' : 'mensuelle'
+  const live = useMemo(() => (entries.data ?? []).filter((e) => e.status !== 'Annulée'), [entries.data])
+  const years = useMemo(() => {
+    const ys = new Set<number>([new Date().getFullYear(), ...live.map((e) => Number(e.period_start.slice(0, 4)))])
+    return [...ys].sort((a, b) => b - a)
+  }, [live])
+  const year = Number(params.get('annee')) || (live[0] ? Number(live[0].period_start.slice(0, 4)) : new Date().getFullYear())
+  const monthsOfYear = live.filter((e) => e.period_start.startsWith(String(year)))
+  const mois = params.get('mois')
+  const period = mois && mois.startsWith(String(year))
+    ? `${mois}-01`
+    : monthsOfYear[0]?.period_start ?? `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}-01`
+
+  function update(next: Partial<{ vue: View; annee: number; mois: string | null }>) {
+    const p = new URLSearchParams(params)
+    if (next.vue) p.set('vue', next.vue)
+    if (next.annee) { p.set('annee', String(next.annee)); p.delete('mois') }
+    if (next.mois !== undefined) { if (next.mois) p.set('mois', next.mois.slice(0, 7)); else p.delete('mois') }
+    setParams(p, { replace: true })
+  }
 
   const q = useQuery({
     queryKey: ['dashboard', period],
-    enabled: !!period,
+    enabled: !!period && view === 'mensuelle',
     queryFn: async () => unwrap(await supabase.rpc('hr_dashboard', { p_period: period })) as unknown as Dashboard,
+    placeholderData: (prev) => prev,
   })
 
   if (roles.length === 0) {
@@ -50,18 +76,33 @@ export default function DashboardPage() {
 
   const d = q.data
   const p = d?.payroll
-  const entry = (entries.data ?? []).find((e) => e.period_start === period && e.status !== 'Annulée')
-  const canDelete = !!entry && can('paie') && (entry.status !== 'Validée' || can('admin'))
+  const entry = live.find((e) => e.period_start === period)
+  const canDelete = view === 'mensuelle' && !!entry && can('paie') && (entry.status !== 'Validée' || can('admin'))
   return (
     <>
       <PageHeader
         title="Tableau de bord"
-        description="Situation du personnel et de la paie pour le mois sélectionné."
+        description={view === 'mensuelle'
+          ? 'Situation du personnel et de la paie pour le mois sélectionné, puis cumul de l\'année.'
+          : `Totaux des traitements validés de janvier à décembre ${year}.`}
         actions={<>
-          <SelectField label="Mois de paie" value={period} onChange={(e) => setPeriod(e.target.value)} className="min-w-[12rem]">
-            {(entries.data ?? []).map((e) => <option key={e.id} value={e.period_start}>{monthLabel(e.period_start)}</option>)}
-            {period && !(entries.data ?? []).some((e) => e.period_start === period) && <option value={period}>{monthLabel(period)}</option>}
+          <div className="self-end inline-flex rounded border border-line bg-white p-0.5" role="group" aria-label="Période d'analyse">
+            {(['mensuelle', 'annuelle'] as const).map((v) => (
+              <button key={v} type="button" aria-pressed={view === v} onClick={() => update({ vue: v })}
+                className={`rounded px-3 py-1.5 text-sm ${view === v ? 'bg-river text-white' : 'text-ink-soft hover:text-ink'}`}>
+                Vue {v}
+              </button>
+            ))}
+          </div>
+          <SelectField label="Année" value={year} onChange={(e) => update({ annee: Number(e.target.value) })} className="w-28">
+            {years.map((y) => <option key={y} value={y}>{y}</option>)}
           </SelectField>
+          {view === 'mensuelle' && (
+            <SelectField label="Mois de paie" value={period} onChange={(e) => update({ mois: e.target.value })} className="min-w-[11rem]">
+              {monthsOfYear.map((e) => <option key={e.id} value={e.period_start}>{monthLabel(e.period_start)} — {e.status}</option>)}
+              {!monthsOfYear.some((e) => e.period_start === period) && <option value={period}>{monthLabel(period)}</option>}
+            </SelectField>
+          )}
           {canDelete && (
             <Button variant="ghost" className="self-end text-signal hover:bg-signal-light hover:text-signal" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirmDelete(true)}>
               Supprimer la paie de {monthLabel(period)}
@@ -74,13 +115,15 @@ export default function DashboardPage() {
           open={confirmDelete}
           entry={entry}
           onClose={() => setConfirmDelete(false)}
-          onDeleted={() => { setConfirmDelete(false); setPeriod('') }}
+          onDeleted={() => { setConfirmDelete(false); update({ mois: null }) }}
         />
       )}
+      {view === 'annuelle' ? <AnnualSynthesis year={year} /> : (<>
       <ErrorNote error={q.error} />
       {q.isLoading || !d ? <Spinner /> : (
         <div className="space-y-6">
           <PayrollComposition d={d} />
+          <MonthContributions d={d} />
 
           <div className="grid gap-6 lg:grid-cols-3">
             <Section title="Effectif actif" className="lg:col-span-1">
@@ -104,7 +147,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="h-44">
                   <ResponsiveContainer>
-                    <LineChart data={d.trend.map((t) => ({ ...t, label: MONTHS[Number(t.period.slice(5, 7)) - 1].slice(0, 3) }))}>
+                    <LineChart data={d.trend.map((t) => ({ ...t, label: MONTHS_SHORT[Number(t.period.slice(5, 7)) - 1] }))}>
                       <CartesianGrid stroke="#DCE1DE" vertical={false} />
                       <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#6B7A84' }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 11, fill: '#6B7A84' }} axisLine={false} tickLine={false} width={56} tickFormatter={(v) => `${Math.round(v / 1e6)} M`} />
@@ -117,9 +160,35 @@ export default function DashboardPage() {
               )}
             </Section>
           </div>
+
+          <AnnualSynthesis year={year} compact />
         </div>
       )}
+      </>)}
     </>
+  )
+}
+
+/** Cotisations, impôts et provisions du mois (tous bulletins non annulés du mois). */
+function MonthContributions({ d }: { d: Dashboard }) {
+  const p = d.payroll
+  if (!p || p.slips === 0) return null
+  const items: { label: string; value: number; sub?: string }[] = [
+    { label: 'IPRES régime général', value: p.ipres_rg, sub: 'parts salariale + patronale' },
+    { label: 'IPRES régime cadres', value: p.ipres_rc, sub: 'parts salariale + patronale' },
+    { label: 'CSS', value: p.css, sub: 'prest. familiales + accident du travail' },
+    { label: 'CFCE', value: p.cfce },
+    { label: 'TRIMF', value: p.trimf },
+    { label: 'IR', value: p.income_tax },
+    { label: 'Charges patronales', value: p.employer_charges },
+    { label: 'Provisions du mois', value: p.leave_provision + p.precarity_provision, sub: `congés ${fcfa(p.leave_provision)} · précarité ${fcfa(p.precarity_provision)}` },
+  ]
+  return (
+    <section className="panel p-4" aria-label="Cotisations et provisions du mois">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4 xl:grid-cols-8">
+        {items.map((i) => <Figure key={i.label} label={i.label} value={`${fcfa(i.value)}`} sub={i.sub} />)}
+      </dl>
+    </section>
   )
 }
 

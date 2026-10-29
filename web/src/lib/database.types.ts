@@ -1672,6 +1672,7 @@ export type Database = {
       }
       has_role: { Args: { p_roles: string[] }; Returns: boolean }
       hr_dashboard: { Args: { p_period?: string }; Returns: Json }
+      hr_dashboard_year: { Args: { p_year: number }; Returns: Json }
       my_employee_id: { Args: never; Returns: string }
       payroll_settings_at: {
         Args: { p_date: string }

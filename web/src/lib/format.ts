@@ -29,6 +29,8 @@ export function date(v: string | null | undefined): string {
 }
 
 export const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+/** Abréviations usuelles (juin et juillet restent distincts). */
+export const MONTHS_SHORT = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
 
 export function monthLabel(period: string | null | undefined): string {
   if (!period) return ''
