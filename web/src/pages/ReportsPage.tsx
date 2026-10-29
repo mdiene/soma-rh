@@ -6,6 +6,7 @@ import { supabase, unwrap, type Views } from '../lib/supabase'
 import { usePayrollEntries } from '../lib/queries'
 import { fcfa, monthLabel, pct } from '../lib/format'
 import { DataTable } from '../components/DataTable'
+import { GroupedTable, type GBlock, type GCol } from '../components/GroupedTable'
 import { Empty, ErrorNote, PageHeader, SelectField, Spinner } from '../components/ui'
 
 type Reg = Views<'v_payroll_register'>
@@ -28,17 +29,41 @@ const m = (k: keyof Reg, header: string) => rc.accessor((r) => Number(r[k] ?? 0)
   footer: (ctx) => fcfa(sumOf(ctx.table.getFilteredRowModel().rows.map((r) => r.original), k)),
 })
 
-const registerCols = [
-  rc.accessor('employee_number', { header: 'Matricule', footer: 'Total' }),
-  rc.accessor('employee_name', { header: 'Salarié' }),
-  rc.accessor('grade_code', { header: 'Catégorie' }),
-  m('base_salary', 'Salaire de base'), m('sursalaire', 'Sursalaire'), m('seniority_bonus', 'Prime anc.'),
-  m('variable_gross', 'Primes'), m('leave_allowance', 'Alloc. congé'), m('overtime_amount', 'Heures sup.'),
-  m('gross_pay', 'Brut'), m('income_tax', 'IR'), m('trimf', 'TRIMF'), m('ipres_rg_employee', 'IPRES RG'),
-  m('ipres_rc_employee', 'IPRES RC'), m('ipm_employee', 'IPM'), m('brs', 'BRS'),
-  m('total_employee_deductions', 'Total retenues'), m('net_remuneration', 'Rém. nette'),
-  m('transport_allowance', 'Transport'), m('total_non_taxable', 'Indemnités'), m('total_net_deductions', 'Retenues diverses'),
-  m('net_pay', 'Net à payer'), m('employer_charges', 'Charges patronales'), m('payroll_cost', 'Masse salariale'),
+/** Livre de paie : sept blocs fonctionnels (cahier des charges, lot 1). */
+const money = (id: keyof Reg, header: string, title?: string): GCol<Reg> => ({ id: String(id), header, title, kind: 'money', value: (r) => Number(r[id] ?? 0) })
+const text = (id: keyof Reg, header: string, stickyWidth?: number): GCol<Reg> => ({ id: String(id), header, kind: 'text', stickyWidth, value: (r) => (r[id] as string | null) ?? '' })
+
+const registerBlocks: GBlock<Reg>[] = [
+  { id: 'ident', label: 'Identification', tone: 'neutral', columns: [
+    text('employee_number', 'Matricule', 84), text('employee_name', 'Salarié', 210),
+    text('designation', 'Emploi'), text('grade_code', 'Catégorie'), text('employment_type', 'Contrat'),
+  ] },
+  { id: 'remu', label: 'Rémunération', tone: 'river', columns: [
+    money('base_salary', 'Salaire de base'), money('sursalaire', 'Sursalaire'), money('seniority_bonus', 'Prime anc.'),
+    money('variable_gross', 'Primes'), money('leave_allowance', 'Alloc. congé'), money('precarity_allowance', 'Ind. précarité', 'Indemnité de fin de contrat payée le mois de sortie'),
+    money('overtime_amount', 'Heures sup.'), money('gross_pay', 'Brut'),
+  ] },
+  { id: 'ret', label: 'Retenues salariales', tone: 'signal', columns: [
+    money('income_tax', 'IR'), money('trimf', 'TRIMF'), money('ipres_rg_employee', 'IPRES RG'), money('ipres_rc_employee', 'IPRES RC'),
+    money('ipm_employee', 'IPM'), money('brs', 'BRS'), money('total_employee_deductions', 'Total retenues'),
+    money('total_net_deductions', 'Retenues diverses', 'Avances, prêts et autres retenues sur le net'),
+  ] },
+  { id: 'pat', label: 'Cotisations patronales', tone: 'ink', columns: [
+    money('css_af', 'CSS prest. fam.'), money('css_at', 'CSS acc. travail'), money('ipres_rg_employer', 'IPRES RG'),
+    money('ipres_rc_employer', 'IPRES RC'), money('ipm_employer', 'IPM'), money('cfce', 'CFCE'), money('employer_charges', 'Total patronal'),
+  ] },
+  { id: 'prov', label: 'Provisions du mois', tone: 'phosphate', columns: [
+    money('leave_provision', 'Prov. congé'), money('precarity_provision', 'Prov. précarité'),
+  ] },
+  { id: 'cumul', label: 'Cumuls annuels validés', tone: 'phosphateSoft', columns: [
+    money('ytd_trimf', 'Cumul TRIMF'), money('ytd_ipres_rg', 'Cumul IPRES RG', 'Parts salariale et patronale'),
+    money('ytd_ipres_rc', 'Cumul IPRES RC', 'Parts salariale et patronale'),
+    money('ytd_leave_provision', 'Cumul prov. congé'), money('ytd_precarity_provision', 'Cumul prov. précarité'),
+  ] },
+  { id: 'net', label: 'Net à payer et masse salariale', tone: 'riverDark', columns: [
+    money('net_remuneration', 'Rém. nette'), money('total_non_taxable', 'Indemnités', 'Transport, panier, kilométrique et autres indemnités non imposables'),
+    money('net_pay', 'Net à payer'), money('payroll_cost', 'Masse salariale'),
+  ] },
 ]
 const employerCols = [
   rc.accessor('employee_number', { header: 'Matricule', footer: 'Total' }),
@@ -105,7 +130,17 @@ export default function ReportsPage() {
       <ErrorNote error={entries.error || reg.error || contrib.error || journal.error} />
       {!entryId ? <Empty title="Aucun traitement de paie">Les états apparaissent dès qu'un traitement est calculé.</Empty> : (
         <>
-          {tab === 'livre' && (reg.isLoading ? <Spinner /> : <DataTable data={reg.data ?? []} columns={registerCols} footer dense exportName={`livre-de-paie-${suffix}`} />)}
+          {tab === 'livre' && (reg.isLoading ? <Spinner /> : (
+            <GroupedTable rows={reg.data ?? []} blocks={registerBlocks} rowKey={(r) => r.salary_slip_id ?? r.employee_number ?? ''}
+              exportName={`livre-de-paie-${suffix}`}
+              notice={entry && entry.status !== 'Validée' ? (
+                <p className="rounded border border-phosphate bg-phosphate-light px-3 py-2 text-ink">
+                  Traitement « {entry.status} » : les montants du mois s'affichent, mais les cumuls annuels ne comprennent que les mois déjà validés.
+                </p>
+              ) : (
+                <p className="text-xs text-ink-muted">Cumuls du 1<sup>er</sup> janvier au mois affiché, bulletins validés uniquement. Montants arrondis à l'affichage ; totaux calculés en pleine précision.</p>
+              )} />
+          ))}
           {tab === 'patronal' && (reg.isLoading ? <Spinner /> : <DataTable data={reg.data ?? []} columns={employerCols} footer exportName={`charges-patronales-${suffix}`} />)}
           {tab === 'cotisations' && (contrib.isLoading ? <Spinner /> : <DataTable data={contrib.data ?? []} columns={contribCols} footer exportName={`cotisations-${suffix}`} />)}
           {tab === 'compta' && (journal.isLoading ? <Spinner /> : <JournalView rows={journal.data ?? []} />)}

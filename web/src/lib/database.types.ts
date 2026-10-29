@@ -1058,6 +1058,7 @@ export type Database = {
           payroll_entry_id: string | null
           period_end: string
           period_start: string
+          precarity_provision: number
           seniority_months: number | null
           seniority_years: number | null
           spouses_count: number | null
@@ -1103,6 +1104,7 @@ export type Database = {
           payroll_entry_id?: string | null
           period_end: string
           period_start: string
+          precarity_provision?: number
           seniority_months?: number | null
           seniority_years?: number | null
           spouses_count?: number | null
@@ -1148,6 +1150,7 @@ export type Database = {
           payroll_entry_id?: string | null
           period_end?: string
           period_start?: string
+          precarity_provision?: number
           seniority_months?: number | null
           seniority_years?: number | null
           spouses_count?: number | null
@@ -1515,8 +1518,11 @@ export type Database = {
           ipm_employer: number | null
           ipres_rc_employee: number | null
           ipres_rc_employer: number | null
+          ipres_rc_total: number | null
           ipres_rg_employee: number | null
           ipres_rg_employer: number | null
+          ipres_rg_total: number | null
+          is_validated: boolean | null
           km_allowance: number | null
           leave_allowance: number | null
           leave_provision: number | null
@@ -1527,6 +1533,8 @@ export type Database = {
           payroll_cost: number | null
           payroll_entry_id: string | null
           period_start: string | null
+          precarity_allowance: number | null
+          precarity_provision: number | null
           previous_rounding: number | null
           salary_slip_id: string | null
           seniority_bonus: number | null
@@ -1539,96 +1547,15 @@ export type Database = {
           transport_allowance: number | null
           trimf: number | null
           variable_gross: number | null
-        }
-        Insert: {
-          base_salary?: never
-          brs?: never
-          cfce?: never
-          contract_situation?: string | null
-          css_af?: never
-          css_at?: never
-          designation?: string | null
-          employee_id?: string | null
-          employee_name?: string | null
-          employee_number?: string | null
-          employer_charges?: number | null
-          employment_type?: string | null
-          grade_code?: string | null
-          gross_pay?: number | null
-          income_tax?: number | null
-          ipm_employee?: never
-          ipm_employer?: never
-          ipres_rc_employee?: never
-          ipres_rc_employer?: never
-          ipres_rg_employee?: never
-          ipres_rg_employer?: never
-          km_allowance?: never
-          leave_allowance?: never
-          leave_provision?: number | null
-          meal_allowance?: never
-          net_pay?: number | null
-          net_remuneration?: number | null
-          overtime_amount?: never
-          payroll_cost?: number | null
-          payroll_entry_id?: string | null
-          period_start?: string | null
-          previous_rounding?: never
-          salary_slip_id?: string | null
-          seniority_bonus?: never
-          staff_status?: string | null
-          status?: string | null
-          sursalaire?: never
-          total_employee_deductions?: number | null
-          total_net_deductions?: number | null
-          total_non_taxable?: number | null
-          transport_allowance?: never
-          trimf?: number | null
-          variable_gross?: never
-        }
-        Update: {
-          base_salary?: never
-          brs?: never
-          cfce?: never
-          contract_situation?: string | null
-          css_af?: never
-          css_at?: never
-          designation?: string | null
-          employee_id?: string | null
-          employee_name?: string | null
-          employee_number?: string | null
-          employer_charges?: number | null
-          employment_type?: string | null
-          grade_code?: string | null
-          gross_pay?: number | null
-          income_tax?: number | null
-          ipm_employee?: never
-          ipm_employer?: never
-          ipres_rc_employee?: never
-          ipres_rc_employer?: never
-          ipres_rg_employee?: never
-          ipres_rg_employer?: never
-          km_allowance?: never
-          leave_allowance?: never
-          leave_provision?: number | null
-          meal_allowance?: never
-          net_pay?: number | null
-          net_remuneration?: number | null
-          overtime_amount?: never
-          payroll_cost?: number | null
-          payroll_entry_id?: string | null
-          period_start?: string | null
-          previous_rounding?: never
-          salary_slip_id?: string | null
-          seniority_bonus?: never
-          staff_status?: string | null
-          status?: string | null
-          sursalaire?: never
-          total_employee_deductions?: number | null
-          total_net_deductions?: number | null
-          total_non_taxable?: number | null
-          transport_allowance?: never
-          trimf?: number | null
-          variable_gross?: never
+          ytd_gross: number | null
+          ytd_ipres_rc: number | null
+          ytd_ipres_rg: number | null
+          ytd_leave_provision: number | null
+          ytd_net_pay: number | null
+          ytd_payroll_cost: number | null
+          ytd_precarity_provision: number | null
+          ytd_trimf: number | null
+          ytd_validated_months: number | null
         }
         Relationships: [
           {
@@ -1666,6 +1593,7 @@ export type Database = {
           ytd_leave_provision: number | null
           ytd_net_pay: number | null
           ytd_payroll_cost: number | null
+          ytd_precarity_provision: number | null
           ytd_trimf: number | null
         }
         Relationships: [
