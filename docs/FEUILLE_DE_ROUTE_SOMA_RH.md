@@ -78,6 +78,17 @@ Quatre décisions bloquent le démarrage ; les autres sont en §10.
 | Lot 5 | Poste et rotation des gardiens (24 h/24) prioritaires ; équipements/dotations hors périmètre (HSQE) |
 | Application mobile | PWA uniquement |
 
+### Avancement (mis à jour le 30/10/2026)
+
+| Ticket | État |
+|---|---|
+| SOC-001 audit étendu, SOC-002 journal, SOC-003 garde-fou, SOC-005 CI | Fait |
+| SOC-004 régression de paie automatique | En attente (le traitement d'août 2026 est laissé tel quel, non recréé) |
+| SOC-006 nettoyage Vercel | À faire côté Vercel (projet `souare-soma-rh` en échec) |
+| PAY-004 validation admin seul, PAY-005 copie des paramètres, PAY-003 contrôles (partiel) | Fait |
+| Lien WhatsApp prérempli (congés) | Fait |
+| TPS-002 postes et rotations (gardiens) | Première version : planning mensuel + génération de cycle |
+
 ---
 
 ## 1. État réel de l'application (constaté le 30/10/2026)
