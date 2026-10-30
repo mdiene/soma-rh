@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Pencil, Printer, X } from 'lucide-react'
+import { Check, MessageCircle, Pencil, Printer, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase, unwrap, type Tables } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -7,6 +7,7 @@ import { useCompany, useLeaveTypes } from '../lib/queries'
 import { date, num } from '../lib/format'
 import { Badge, Button, ErrorNote, Modal, SelectField, TextField } from './ui'
 import { PrintPortal, printPortal } from './PrintPortal'
+import { whatsappLink } from '../lib/whatsapp'
 
 export type LeaveApp = Tables<'leave_applications'> & {
   employee: { employee_number: string; first_name: string; last_name: string; designation: { name: string } | null } | null
@@ -41,6 +42,15 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
     queryFn: async () => {
       const { data } = await supabase.from('v_leave_balances').select('*').eq('employee_number', app!.employee!.employee_number)
       return data ?? []
+    },
+  })
+
+  const phone = useQuery({
+    queryKey: ['employee_phone', app?.employee_id],
+    enabled: !!app && can('rh'),
+    queryFn: async () => {
+      const { data } = await supabase.from('employees').select('phone_personal, phone_work').eq('id', app!.employee_id).maybeSingle()
+      return data?.phone_personal || data?.phone_work || null
     },
   })
 
@@ -85,6 +95,15 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
                 <Button variant="ghost" icon={<X className="h-4 w-4" />} onClick={() => decide.mutate('Rejetée')}>Rejeter</Button>
               </>
             )}
+            {isHr && app.status !== 'Ouverte' && app.status !== 'Annulée' && (() => {
+              const txt = app.status === 'Approuvée'
+                ? `Bonjour ${emp?.first_name ?? ''}, votre congé du ${date(app.from_date)} au ${date(app.to_date)} est approuvé.`
+                : `Bonjour ${emp?.first_name ?? ''}, votre demande de congé du ${date(app.from_date)} au ${date(app.to_date)} n'a pas été retenue. Contactez les RH pour plus de détails.`
+              const href = whatsappLink(phone.data, txt)
+              return href
+                ? <a className="inline-flex items-center justify-center gap-2 rounded px-3.5 py-2 text-sm font-medium text-ink-soft transition-colors hover:bg-paper hover:text-ink" href={href} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4" />Prévenir par WhatsApp</a>
+                : <Button variant="ghost" icon={<MessageCircle className="h-4 w-4" />} disabled title="Aucun numéro valide sur la fiche du salarié">Prévenir par WhatsApp</Button>
+            })()}
             {canEdit && <Button variant="ghost" icon={<Pencil className="h-4 w-4" />} onClick={() => setEditing(true)}>Modifier</Button>}
             {app.status !== 'Rejetée' && app.status !== 'Annulée' && (
               <Button variant="primary" icon={<Printer className="h-4 w-4" />} onClick={printPortal}>
