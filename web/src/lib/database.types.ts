@@ -992,11 +992,14 @@ export type Database = {
         Row: {
           brs_rate: number
           cfce_rate: number
+          allowance_absence_basis: string
           created_at: string
           css_af_rate: number
           css_at_rate: number
           css_ceiling: number
           effective_from: string
+          ipm_on_contractors: boolean
+          severance_basis: string
           hourly_rate_divisor: number
           id: string
           ipm_ceiling: number
@@ -1021,6 +1024,7 @@ export type Database = {
         Insert: {
           brs_rate?: number
           cfce_rate?: number
+          allowance_absence_basis?: string
           created_at?: string
           css_af_rate?: number
           css_at_rate?: number
@@ -1050,11 +1054,14 @@ export type Database = {
         Update: {
           brs_rate?: number
           cfce_rate?: number
+          allowance_absence_basis?: string
           created_at?: string
           css_af_rate?: number
           css_at_rate?: number
           css_ceiling?: number
           effective_from?: string
+          ipm_on_contractors?: boolean
+          severance_basis?: string
           hourly_rate_divisor?: number
           id?: string
           ipm_ceiling?: number
