@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { supabase, unwrap } from '../lib/supabase'
 import { fcfa, monthLabel } from '../lib/format'
+import { PayrollForecast } from '../components/PayrollForecast'
 import { ErrorNote, Figure, PageHeader, Section, Spinner } from '../components/ui'
 
 type Analytics = {
@@ -106,6 +107,8 @@ export default function PilotagePage() {
           </table>
         )}
       </Section>
+
+      <div className="mt-6"><PayrollForecast /></div>
     </>
   )
 }

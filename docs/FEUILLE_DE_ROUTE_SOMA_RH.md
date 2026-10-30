@@ -92,7 +92,7 @@ Quatre décisions bloquent le démarrage ; les autres sont en §10.
 | D10 arbitrages des règles Excel + réglages dans Paramètres | Fait (docs/ARBITRAGES_PAIE.md) |
 | Lot 3 réduit : suivi du paiement (espèces / chèque / mobile money), états de paiement imprimables par mode | Première version faite ; synthèse CSV du journal faite ; pas de format bancaire ni de transmission (D3, D8) |
 | Règles de paie des postes de nuit / heures sup. des gardiens | Laissées telles quelles (décision du 30/10/2026) ; le planning n'alimente pas la paie |
-| Lot 6 pilotage RH : effectifs, structure (contrat, catégorie, sexe, âge, ancienneté), entrées/sorties, rotation, absentéisme, heures sup., coût du dernier mois validé | Première version faite (page Pilotage RH) ; prévisions et scénarios à venir |
+| Lot 6 pilotage RH : effectifs, structure (contrat, catégorie, sexe, âge, ancienneté), entrées/sorties, rotation, absentéisme, heures sup., coût du dernier mois validé | Première version faite (page Pilotage RH) ; prévision de masse salariale avec scénarios (CDD non renouvelés, augmentation générale, recrutements) ajoutée |
 | TPS-002 postes et rotations (gardiens) | Première version : planning mensuel + génération de cycle |
 | ESS-001/002/006 portail salarié (Mon espace : dernier bulletin, soldes, planning, demandes d'attestation / acompte / correction de présence / données personnelles) et traitement RH | Première version faite ; notifications e-mail Gmail et délégation d'approbation à venir |
 
