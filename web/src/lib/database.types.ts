@@ -913,6 +913,7 @@ export type Database = {
       payroll_inputs: {
         Row: {
           absence_hours: number
+          attendance_override: boolean
           created_at: string
           employee_id: string
           id: string
@@ -931,6 +932,7 @@ export type Database = {
         }
         Insert: {
           absence_hours?: number
+          attendance_override?: boolean
           created_at?: string
           employee_id: string
           id?: string
@@ -949,6 +951,7 @@ export type Database = {
         }
         Update: {
           absence_hours?: number
+          attendance_override?: boolean
           created_at?: string
           employee_id?: string
           id?: string

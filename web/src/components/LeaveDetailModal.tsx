@@ -88,7 +88,7 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
             {canEdit && <Button variant="ghost" icon={<Pencil className="h-4 w-4" />} onClick={() => setEditing(true)}>Modifier</Button>}
             {app.status !== 'Rejetée' && app.status !== 'Annulée' && (
               <Button variant="primary" icon={<Printer className="h-4 w-4" />} onClick={printPortal}>
-                {approved ? 'Imprimer le bon de congé' : 'Imprimer la demande'}
+                Imprimer le bon de congé
               </Button>
             )}
           </>
@@ -147,12 +147,7 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
               <p>Réf. {app.id.slice(0, 8).toUpperCase()}</p>
             </div>
           </header>
-          <h1 className="my-6 text-center text-2xl font-bold tracking-wide">
-            {approved ? 'BON DE CONGÉ' : 'DEMANDE DE CONGÉ'}
-          </h1>
-          <p className="mb-4 text-center text-sm">
-            {approved ? 'Congé approuvé' : `Statut : ${app.status}${app.status === 'Ouverte' ? ' — en attente d’approbation' : ''}`}
-          </p>
+          <h1 className="my-8 text-center text-2xl font-bold tracking-wide">BON DE CONGÉ</h1>
           <table className="w-full border-collapse text-sm">
             <tbody>
               {([
@@ -165,8 +160,7 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
                 ['Nombre de jours', `${num(app.total_days ?? 0, 1)}`],
                 ['Date de reprise', date(addDay(app.to_date))],
                 ['Motif', app.reason ?? ''],
-                ...(bal ? [['Solde après approbation', `${num(Number(bal.balance) - (approved ? 0 : Number(app.total_days ?? 0)), 1)} jour(s)`]] : []),
-                ...(app.approved_at ? [['Date d’approbation', date(app.approved_at.slice(0, 10))]] : []),
+                ...(bal ? [['Solde après ce congé', `${num(Number(bal.balance) - (approved ? 0 : Number(app.total_days ?? 0)), 1)} jour(s)`]] : []),
               ] as [string, string][]).map(([k, v]) => (
                 <tr key={k}>
                   <th className="w-48 border border-[#1D2A33] bg-[#F6F7F5] px-3 py-2 text-left font-semibold">{k}</th>
