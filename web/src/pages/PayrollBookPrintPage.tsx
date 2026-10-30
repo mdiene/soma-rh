@@ -188,6 +188,7 @@ export default function PayrollBookPrintPage() {
     )
   }
 
+  const sheetCls = 'mx-auto min-h-[277mm] w-[190mm] bg-white p-3 shadow-sm print:min-h-0 print:p-0 print:shadow-none'
   return (
     <>
       <div className="no-print mb-4 flex items-center justify-between">
