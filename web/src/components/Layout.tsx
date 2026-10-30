@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import {
   BarChart3, CalendarCheck2, CalendarDays, Calculator, FileSpreadsheet, LayoutDashboard, LogOut, Menu,
-  CalendarClock, History, Inbox, UserCircle, Settings, SlidersHorizontal, Users, Wallet,
+  CalendarClock, History, PieChart, Inbox, UserCircle, Settings, SlidersHorizontal, Users, Wallet,
 } from 'lucide-react'
 import { Suspense, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
@@ -12,6 +12,7 @@ type Item = { to: string; label: string; icon: React.ElementType; roles?: Role[]
 const GROUPS: { title: string; items: Item[] }[] = [
   { title: 'Pilotage', items: [
     { to: '/', label: 'Tableau de bord', icon: LayoutDashboard, roles: ['rh', 'paie'] },
+    { to: '/pilotage', label: 'Pilotage RH', icon: PieChart, roles: ['rh', 'paie'] },
     { to: '/mon-espace', label: 'Mon espace', icon: UserCircle, roles: ['salarie', 'rh', 'paie'] },
     { to: '/demandes', label: 'Demandes des salariés', icon: Inbox, roles: ['rh'] },
   ] },
