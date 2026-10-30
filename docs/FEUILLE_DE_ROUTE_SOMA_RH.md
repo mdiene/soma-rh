@@ -88,6 +88,7 @@ Quatre décisions bloquent le démarrage ; les autres sont en §10.
 | PAY-004 validation admin seul, PAY-005 copie des paramètres, PAY-003 contrôles (partiel) | Fait |
 | Lien WhatsApp prérempli (congés) | Fait |
 | TPS-002 postes et rotations (gardiens) | Première version : planning mensuel + génération de cycle |
+| ESS-001/002/006 portail salarié (Mon espace : dernier bulletin, soldes, planning, demandes d'attestation / acompte / correction de présence / données personnelles) et traitement RH | Première version faite ; notifications e-mail Gmail et délégation d'approbation à venir |
 
 ---
 

@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import {
   BarChart3, CalendarCheck2, CalendarDays, Calculator, FileSpreadsheet, LayoutDashboard, LogOut, Menu,
-  CalendarClock, History, Settings, SlidersHorizontal, Users, Wallet,
+  CalendarClock, History, Inbox, UserCircle, Settings, SlidersHorizontal, Users, Wallet,
 } from 'lucide-react'
 import { Suspense, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
@@ -10,7 +10,11 @@ import { Spinner } from './ui'
 
 type Item = { to: string; label: string; icon: React.ElementType; roles?: Role[]; withoutRole?: boolean }
 const GROUPS: { title: string; items: Item[] }[] = [
-  { title: 'Pilotage', items: [{ to: '/', label: 'Tableau de bord', icon: LayoutDashboard, roles: ['rh', 'paie'] }] },
+  { title: 'Pilotage', items: [
+    { to: '/', label: 'Tableau de bord', icon: LayoutDashboard, roles: ['rh', 'paie'] },
+    { to: '/mon-espace', label: 'Mon espace', icon: UserCircle, roles: ['salarie', 'rh', 'paie'] },
+    { to: '/demandes', label: 'Demandes des salariés', icon: Inbox, roles: ['rh'] },
+  ] },
   {
     title: 'Personnel',
     items: [

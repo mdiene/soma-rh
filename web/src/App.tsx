@@ -19,6 +19,8 @@ const PrintSlipsPage = lazy(() => import('./pages/PrintSlipsPage'))
 const PayrollBookPrintPage = lazy(() => import('./pages/PayrollBookPrintPage'))
 const JournalPage = lazy(() => import('./pages/JournalPage'))
 const PlanningPage = lazy(() => import('./pages/PlanningPage'))
+const MySpacePage = lazy(() => import('./pages/MySpacePage'))
+const RequestsPage = lazy(() => import('./pages/RequestsPage'))
 const SimulatorPage = lazy(() => import('./pages/SimulatorPage'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
@@ -37,7 +39,7 @@ function RoleGuard({ roles, children }: { roles: Role[]; children: ReactNode }) 
 /** Accueil : tableau de bord pour la gestion, bulletins personnels pour un salarié. */
 function Home() {
   const { can, roles } = useAuth()
-  if (!can('rh', 'paie') && roles.includes('salarie')) return <Navigate to="/mes-bulletins" replace />
+  if (!can('rh', 'paie') && roles.includes('salarie')) return <Navigate to="/mon-espace" replace />
   return <DashboardPage />
 }
 
@@ -75,6 +77,8 @@ export default function App() {
         <Route path="etats" element={<RoleGuard roles={staff}><ReportsPage /></RoleGuard>} />
         <Route path="journal" element={<RoleGuard roles={['rh']}><JournalPage /></RoleGuard>} />
         <Route path="parametres" element={roles.length === 0 ? <SettingsPage /> : <RoleGuard roles={staff}><SettingsPage /></RoleGuard>} />
+        <Route path="mon-espace" element={<MySpacePage />} />
+        <Route path="demandes" element={<RoleGuard roles={['rh']}><RequestsPage /></RoleGuard>} />
         <Route path="mes-bulletins" element={<MySlipsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
