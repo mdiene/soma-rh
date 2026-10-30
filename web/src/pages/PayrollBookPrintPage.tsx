@@ -41,7 +41,7 @@ const STATS: { label: string; value: (s: Slip) => number; hours?: boolean }[] = 
   { label: 'Coût total', value: (s) => Number(s.payroll_cost) },
 ]
 
-const cell = 'px-1.5 py-[1px] text-right tabular-nums'
+const cell = 'px-1.5 py-[2.5px] text-right tabular-nums'
 const show = (v: number) => (Math.round(v) === 0 ? '' : fcfa(v))
 const round2 = (v: number) => Math.round(v * 100) / 100
 
@@ -96,57 +96,68 @@ export default function PayrollBookPrintPage() {
   const sumRub = (r: Rubrique) => list.reduce((a, s) => a + amountOf(lineOf(s, r.code), r.field), 0)
   const sumAll = (f: (s: Slip) => number) => list.reduce((a, s) => a + f(s), 0)
 
+  const SECTION = 'bg-[#E9F1F0] text-[#0A4F4C] text-[8.5px] font-bold uppercase tracking-[0.08em] [print-color-adjust:exact]'
+
   function renderTable(slipsOfPage: Slip[], withTotal: boolean) {
+    const span = 1 + slipsOfPage.length + (withTotal ? 1 : 0)
+    const totalCell = 'border-l-2 border-[#0F6E6A] bg-[#F1F7F6] [print-color-adjust:exact]'
+    const sectionRow = (label: string) => (
+      <tr><td colSpan={span} className={`${SECTION} px-1.5 py-[3px]`}>{label}</td></tr>
+    )
     const rubRow = (r: Rubrique) => (
-      <tr key={r.code}>
-        <td className="whitespace-nowrap py-[1px] pl-1 pr-2"><span className="inline-block w-8 text-right text-[#52606B]">{r.sort}</span> {r.label}</td>
+      <tr key={r.code} className="border-b border-[#DCE1DE] even:bg-[#FAFBFA] [print-color-adjust:exact]">
+        <td className="whitespace-nowrap py-[2.5px] pl-1.5 pr-2"><span className="inline-block w-7 text-right text-[8px] text-[#7A8791]">{r.sort}</span> {r.label}</td>
         {slipsOfPage.map((s) => <td key={s.id} className={cell}>{show(amountOf(lineOf(s, r.code), r.field))}</td>)}
-        {withTotal && <td className={`${cell} font-semibold`}>{show(sumRub(r))}</td>}
+        {withTotal && <td className={`${cell} font-semibold ${totalCell}`}>{show(sumRub(r))}</td>}
       </tr>
     )
-    const totalRow = (label: string, val: (s: Slip) => number) => (
-      <tr className="bg-[#FFF200] font-bold [print-color-adjust:exact]">
-        <td className="py-[2px] pl-12">{label}</td>
+    const emphasis = (label: string, val: (s: Slip) => number, tone: string, tot: string) => (
+      <tr className={`${tone} font-bold [print-color-adjust:exact]`}>
+        <td className="py-[3px] pl-1.5">{label}</td>
         {slipsOfPage.map((s) => <td key={s.id} className={cell}>{fcfa(val(s))}</td>)}
-        {withTotal && <td className={cell}>{fcfa(sumAll(val))}</td>}
+        {withTotal && <td className={`${cell} ${tot} border-l-2 border-[#0F6E6A]`}>{fcfa(sumAll(val))}</td>}
       </tr>
     )
     return (
-      <table className="w-full table-fixed border-collapse text-[9px]">
-        <colgroup><col style={{ width: '48mm' }} />{slipsOfPage.map((s) => <col key={s.id} />)}{withTotal && <col />}</colgroup>
+      <table className="w-full table-fixed border-collapse text-[9.5px] leading-tight text-[#1D2A33]">
+        <colgroup><col style={{ width: '47mm' }} />{slipsOfPage.map((s) => <col key={s.id} />)}{withTotal && <col />}</colgroup>
         <thead>
-          <tr className="border-y border-[#1D2A33] bg-[#C6DEC6] align-top [print-color-adjust:exact]">
-            <th className="py-1 pl-1 text-left font-normal">Ventilation par Salarié<br /><span className="mt-1 inline-block underline">Rubriques</span></th>
+          <tr className="bg-[#17323B] align-bottom text-white [print-color-adjust:exact]">
+            <th className="px-1.5 py-1.5 text-left text-[8.5px] font-semibold uppercase tracking-wider text-white/80">Rubriques</th>
             {slipsOfPage.map((s) => (
-              <th key={s.id} className="border-l border-white px-1.5 py-1 text-left font-normal leading-tight">
-                <span className="block">{s.employee_number}</span>
-                <span className="block">{s.employee?.gender === 'F' ? 'Mme' : 'M'}</span>
-                <span className="block break-words uppercase">{s.employee?.last_name}</span>
-                <span className="block break-words uppercase">{s.employee?.first_name}</span>
+              <th key={s.id} className="border-l border-white/20 px-1.5 py-1.5 text-left font-normal leading-tight">
+                <span className="block text-[10px] font-bold tracking-wide text-[#F2C94C]">{s.employee_number}</span>
+                <span className="block break-words text-[9px] font-semibold uppercase">{s.employee?.last_name}</span>
+                <span className="block break-words text-[8.5px] uppercase text-white/80">{s.employee?.gender === 'F' ? 'Mme ' : ''}{s.employee?.first_name}</span>
               </th>
             ))}
-            {withTotal && <th className="border-l border-white px-1.5 py-1 text-right font-bold">Total</th>}
+            {withTotal && <th className="border-l-2 border-[#F2C94C] px-1.5 py-1.5 text-right text-[10px] font-bold uppercase tracking-wider text-[#F2C94C]">Total</th>}
           </tr>
         </thead>
         <tbody>
-          <tr><td className="h-1" /></tr>
+          {sectionRow('Rémunération')}
           {gains.map(rubRow)}
-          {totalRow('Total Brut', (s) => Number(s.gross_pay))}
+          {emphasis('Total brut', (s) => Number(s.gross_pay), 'bg-[#FFF3B8] text-[#1D2A33]', 'bg-[#FFE97A]')}
+          {sectionRow('Retenues salariales')}
           {retenues.map(rubRow)}
-          {totalRow('Total Cotisation', (s) => Number(s.total_employee_deductions))}
+          {emphasis('Total retenues', (s) => Number(s.total_employee_deductions), 'bg-[#FADCD6] text-[#8A2C1F]', 'bg-[#F5C4BA]')}
+          {others.length > 0 && sectionRow('Indemnités et autres éléments')}
           {others.map(rubRow)}
-          <tr><td className="h-3" /></tr>
-          {STATS.map((st) => (
-            <tr key={st.label}>
-              <td className="py-[1px] pl-12">{st.label}</td>
-              {slipsOfPage.map((s) => <td key={s.id} className={cell}>{st.hours ? round2(st.value(s)) : fcfa(st.value(s))}</td>)}
-              {withTotal && <td className={`${cell} font-semibold`}>{st.hours ? round2(sumAll(st.value)) : fcfa(sumAll(st.value))}</td>}
-            </tr>
-          ))}
-          <tr className="border-y border-[#1D2A33]">
-            <td className="py-[2px] pl-12">Nombre de salariés</td>
+          {sectionRow('Synthèse')}
+          {STATS.map((st) => {
+            const strong = st.label === 'Net à payer'
+            return (
+              <tr key={st.label} className={strong ? 'bg-[#CFE7E4] font-bold text-[#0A4F4C] [print-color-adjust:exact]' : 'border-b border-[#DCE1DE] even:bg-[#FAFBFA] [print-color-adjust:exact]'}>
+                <td className={`py-[2.5px] pl-1.5 ${strong ? 'text-[10px]' : ''}`}>{st.label}</td>
+                {slipsOfPage.map((s) => <td key={s.id} className={`${cell} ${strong ? 'text-[10px]' : ''}`}>{st.hours ? round2(st.value(s)) : fcfa(st.value(s))}</td>)}
+                {withTotal && <td className={`${cell} font-semibold border-l-2 border-[#0F6E6A] ${strong ? 'bg-[#B5DBD6] text-[10px]' : 'bg-[#F1F7F6]'}`}>{st.hours ? round2(sumAll(st.value)) : fcfa(sumAll(st.value))}</td>}
+              </tr>
+            )
+          })}
+          <tr className="border-y-2 border-[#17323B]">
+            <td className="py-[3px] pl-1.5 font-bold">Nombre de salariés</td>
             {slipsOfPage.map((s) => <td key={s.id} />)}
-            {withTotal && <td className={`${cell} font-bold`}>{list.length}</td>}
+            {withTotal && <td className={`${cell} border-l-2 border-[#0F6E6A] text-[11px] font-bold`}>{list.length}</td>}
           </tr>
         </tbody>
       </table>
@@ -155,19 +166,28 @@ export default function PayrollBookPrintPage() {
 
   function renderHeader(page: number) {
     return (
-      <header className="mb-2 text-[9px]">
-        <div className="grid grid-cols-[1fr_auto_1fr] border border-[#1D2A33] bg-[#C6DEC6] px-2 py-1.5 [print-color-adjust:exact]">
-          <div className="space-y-0.5"><p>Date du jour : {today}</p><p>Heure : {time}</p><p className="pt-3">Édition en :</p></div>
-          <div className="text-center"><p className="text-[15px] font-bold tracking-wide">Livre de paie M E N S U E L</p><p>Période du {date(e!.period_start)} au {date(e!.period_end)}</p></div>
-          <div className="text-right"><p>Page : {page}/{totalPages}</p><p className="pt-7">{closing}</p></div>
+      <header className="mb-3">
+        <div className="flex items-end justify-between border-b-[3px] border-[#0F6E6A] pb-2">
+          <div>
+            <p className="text-[8.5px] font-semibold uppercase tracking-[0.14em] text-[#52606B]">Société</p>
+            <p className="text-[13px] font-bold leading-tight">{company.data?.name ?? ''}</p>
+            {company.data?.ninea && <p className="text-[8.5px] text-[#52606B]">NINEA {company.data.ninea}</p>}
+          </div>
+          <div className="text-center">
+            <p className="text-[17px] font-bold uppercase tracking-[0.18em] text-[#0A4F4C]">Livre de paie mensuel</p>
+            <p className="text-[10px] font-semibold">Période du {date(e!.period_start)} au {date(e!.period_end)}</p>
+          </div>
+          <div className="text-right text-[8.5px] leading-snug text-[#52606B]">
+            <p className="text-[11px] font-bold text-[#1D2A33]">Page {page} / {totalPages}</p>
+            <p>Édité le {today} à {time}</p>
+            <p className="font-semibold text-[#8A6A00]">{closing}</p>
+          </div>
         </div>
-        <div className="mt-1 border border-[#1D2A33] px-2 py-1.5"><p>Société : <strong>{company.data?.name ?? ''}</strong></p></div>
-        <div className="mt-1 border border-[#1D2A33] px-2 py-1.5"><p>Matricule : {first} à {last}</p></div>
+        <p className="mt-1 text-[8.5px] text-[#52606B]">Matricules {first} à {last} · {list.length} salarié(s) · montants en F CFA</p>
       </header>
     )
   }
 
-  const sheetCls = 'mx-auto min-h-[277mm] w-[190mm] bg-white p-3 shadow-sm print:min-h-0 print:p-0 print:shadow-none'
   return (
     <>
       <div className="no-print mb-4 flex items-center justify-between">
@@ -181,14 +201,14 @@ export default function PayrollBookPrintPage() {
             <section key={i} className={`${sheetCls} print:break-after-page`}>
               {renderHeader(i + 1)}
               {renderTable(p, totalOnLast && i === pages.length - 1)}
-              <p className="mt-2 text-[8px]">(*) : Rubriques particulières</p>
+              <p className="mt-2 border-t border-[#DCE1DE] pt-1 text-[8px] text-[#7A8791]">(*) Rubriques particulières · document confidentiel</p>
             </section>
           ))}
           {!totalOnLast && (
             <section className={sheetCls}>
               {renderHeader(totalPages)}
               {renderTable([], true)}
-              <p className="mt-2 text-[8px]">(*) : Rubriques particulières</p>
+              <p className="mt-2 border-t border-[#DCE1DE] pt-1 text-[8px] text-[#7A8791]">(*) Rubriques particulières · document confidentiel</p>
             </section>
           )}
         </div>

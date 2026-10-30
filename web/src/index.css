@@ -63,8 +63,16 @@
   main { padding: 0 !important; }
   /* états : paysage, en-têtes répétés sur chaque page, pas de positionnement figé */
   .print-landscape { page: etat; }
-  .grouped-table { font-size: 8.5px; width: 100% !important; }
-  .grouped-table th, .grouped-table td { position: static !important; box-shadow: none !important; padding: 2px 3px !important; }
+  .print-landscape, .print-landscape * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-landscape .panel { border: none !important; box-shadow: none !important; }
+  .grouped-table { font-size: 9.5px; line-height: 1.25; width: 100% !important; color: #1D2A33; }
+  .grouped-table th, .grouped-table td { position: static !important; box-shadow: none !important; padding: 3px 4px !important; }
+  /* lecture : lignes alternées, séparateurs fins, intitulés de blocs plus francs */
+  .grouped-table tbody tr.group:nth-child(even) td { background-color: #F5F8F7 !important; }
+  .grouped-table tbody td { border-bottom: 0.5px solid #C9D1D6 !important; }
+  .grouped-table thead tr:first-child th { font-size: 9px !important; letter-spacing: 0.1em; height: auto !important; padding: 4px !important; }
+  .grouped-table thead tr:nth-child(2) th { font-size: 9px !important; border-bottom: 1.5px solid #1D2A33 !important; color: #1D2A33 !important; }
+  .grouped-table tfoot td { border-top: 2px solid #1D2A33 !important; font-size: 10px; }
   /* largeurs fixes des colonnes figées libérées à l'impression */
   .grouped-table th[style], .grouped-table td[style] { min-width: 0 !important; max-width: none !important; width: auto !important; }
   .grouped-table thead { display: table-header-group; }
@@ -72,7 +80,11 @@
   .grouped-table tfoot { display: table-footer-group; }
   .grouped-table tr { break-inside: avoid; }
 }
-@page etat { size: A4 landscape; margin: 8mm; }
+@page etat {
+  size: A4 landscape; margin: 10mm 10mm 14mm;
+  @bottom-left { content: "SOMA-RH · document confidentiel"; font: 8px Archivo, sans-serif; color: #52606B; }
+  @bottom-right { content: "Page " counter(page) " / " counter(pages); font: 8px Archivo, sans-serif; color: #52606B; }
+}
 
 /* documents imprimés depuis une fenêtre popup (bon de congé, fiche salarié) */
 @media screen { .print-portal { display: none; } }
