@@ -7,6 +7,7 @@ import { selectable, useAgreements, useCompany, useContractTypes, useDesignation
 import { useAuth } from '../lib/auth'
 import { currentPeriod, fcfa, monthBounds, monthLabel } from '../lib/format'
 import { Badge, Button, ErrorNote, Modal, PageHeader, Section, SelectField, Spinner, TextField } from '../components/ui'
+import { EmployeeFicheButton } from '../components/EmployeeFiche'
 
 type Emp = Tables<'employees'>
 type Assign = Tables<'salary_structure_assignments'>
@@ -76,7 +77,10 @@ export default function EmployeeDetailPage() {
       <PageHeader
         title={isNew ? 'Nouveau salarié' : `${form.first_name ?? ''} ${form.last_name ?? ''}`}
         description={isNew ? 'Renseignez au minimum le nom, le contrat et la date d’entrée. Le matricule est attribué automatiquement.' : <span className="inline-flex items-center gap-2">{form.employee_number} <Badge value={form.status ?? 'Active'} /></span>}
-        actions={!readOnly && <Button variant="primary" icon={<Save className="h-4 w-4" />} loading={save.isPending} onClick={() => save.mutate()}>{isNew ? 'Créer le salarié' : 'Enregistrer la fiche'}</Button>}
+        actions={<>
+          {!isNew && emp.data && <EmployeeFicheButton employee={emp.data} />}
+          {!readOnly && <Button variant="primary" icon={<Save className="h-4 w-4" />} loading={save.isPending} onClick={() => save.mutate()}>{isNew ? 'Créer le salarié' : 'Enregistrer la fiche'}</Button>}
+        </>}
       />
       <ErrorNote error={emp.error || save.error} />
       {created && !save.isSuccess && <p className="mb-4 rounded border border-river/30 bg-river-light px-3 py-2 text-sm text-river-dark">Salarié créé avec le matricule <strong>{created}</strong>.</p>}
