@@ -55,8 +55,8 @@ Chaque `git push` sur `main` redéploie automatiquement. Dans Claude Code, le pl
 | Traitements de paie | calcul par lot, contrôle, validation, impression de tous les bulletins | BULLETIN + macros VBA |
 | Bulletin | maquette fidèle, cumuls période/année, montant en lettres, impression / PDF | BULLETIN |
 | Simulateur net / brut | simulation sans enregistrement, recherche du sursalaire pour un net cible | macro Valeur_Cible |
-| États et déclarations | livre de paie, résumé des cotisations, charges patronales, écritures comptables, export CSV | livre de paie, états, compta |
-| Paramètres | rôles, taux et plafonds, barèmes IR/TRIMF, rubriques, grilles conventionnelles, société | PARAMETRES |
+| États et déclarations | livre de paie en 7 blocs avec cumuls annuels validés (TRIMF, IPRES RG/RC, provisions congé et précarité), cotisations, charges patronales, écritures comptables ; en-têtes figés, sous-totaux, contrôles de cohérence, export CSV, impression paysage | livre de paie, états, compta |
+| Paramètres | rôles, taux et plafonds, barèmes IR/TRIMF, rubriques, grilles conventionnelles, société ; référentiels RH (emploi, type de contrat, convention, catégorie, mode de paiement) avec activation et journal | PARAMETRES |
 
 ## Base de données
 
@@ -73,6 +73,15 @@ Migrations dans `supabase/migrations/` (déjà appliquées sur le projet) :
 | `…170600_service_context.sql` | traitements serveur (clé service / console SQL) |
 | `…170700_admin_users.sql` | gestion des comptes par l'administrateur |
 | `…180000_delete_payroll_entry.sql` | suppression d'une paie mensuelle (validée : administrateur uniquement) |
+| `…29090000_lot1_provisions_cumuls.sql` | provision précarité du mois ; cumuls annuels validés dans `v_payroll_register` et `v_salary_slip_ytd` |
+| `…29120000_lot2_dashboard_annuel.sql` | `hr_dashboard` enrichi ; `hr_dashboard_year` (traitements validés, 12 mois) |
+| `…29140000_lot3_presences.sql` | heures de maladie, contrôle 24 h par jour, traçabilité, report dans la paie |
+| `…29160000_lot6_matricule.sql` | séquence et déclencheurs du matricule, `preview_employee_number`, `admin_change_employee_number`, `audit_log` |
+| `…29180000_lot7_referentiels.sql` | `contract_types`, `payment_modes`, activation / journal des référentiels ; le moteur lit la nature du contrat dans le référentiel |
+| `…30100000_durcissement_triggers.sql` | fonctions de déclencheur retirées de l'API |
+
+Après chaque modification du moteur, le contrôle de non-régression recalcule les 25 bulletins d'août 2026
+avec les valeurs du classeur (voir [l'analyse](docs/ANALYSE_EXCEL.md#3-validation-du-moteur-soma-rh)).
 
 `supabase/seed/` contient la reprise des 26 salariés et des variables d'août 2026 (données personnelles :
 exclu de Git par `.gitignore`).

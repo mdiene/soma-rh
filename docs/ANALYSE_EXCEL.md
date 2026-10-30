@@ -73,6 +73,8 @@ Notation : `H = 173,33` heures ; *situation* = « TRAVAIL » si contrat CDI ou C
 * **Bulletins d'août 2026** : les 25 bulletins recalculés par `compute_salary_slip` ont été comparés à Excel sur 17 montants (brut, IR, TRIMF, retenues, charges patronales, nets, masse salariale, prime d'ancienneté, CFCE, IPRES, CSS, IPM, transport, provision congé). **Écart maximal : 0,0000000001 F**, c'est-à-dire le bruit d'arrondi en virgule flottante d'Excel.
 * **Totaux** : brut 4 929 179,09 ; IR 527 429,79 ; TRIMF 31 600 ; retenues 916 439,21 ; charges patronales 810 489,50 ; net 4 662 739,89. Les journaux comptables sont équilibrés (5 579 179,09 et 916 439,21, identiques à la feuille `compta`).
 * **Barèmes IR et TRIMF** : 720 cas (brut mensuel de 20 000 à 2 982 500 F × parts de 1 à 5) comparés à une réécriture littérale des formules Excel : empreintes MD5 identiques.
+* **Après les lots 1 à 7 (30/10/2026)** : nouveau contrôle sur les 25 bulletins d'août, avec le sursalaire du classeur passé au moteur : écart brut 0,00000000002 F, écart net 0,00000000007 F, provision congé identique ; brut 4 929 179,09, net 4 662 739,89. La date d'entrée de S0021 ayant été modifiée dans l'application après la reprise (ancienneté 5 ans au lieu de 2), le contrôle remet celle du classeur dans une transaction annulée.
+* **Cumuls** : scénario exécuté puis annulé — un mois en brouillon n'entre pas dans les cumuls, un mois validé y entre, un mois annulé ou supprimé en sort.
 
 ## 4. Macros VBA (`vbaProject.bin`)
 
