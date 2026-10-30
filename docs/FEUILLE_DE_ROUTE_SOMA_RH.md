@@ -87,6 +87,8 @@ Quatre décisions bloquent le démarrage ; les autres sont en §10.
 | SOC-006 nettoyage Vercel | À faire côté Vercel (projet `souare-soma-rh` en échec) |
 | PAY-004 validation admin seul, PAY-005 copie des paramètres, PAY-003 contrôles (partiel) | Fait |
 | Lien WhatsApp prérempli (congés) | Fait |
+| PAY-006 réouverture motivée (admin), PAY-008 comparaison avec le mois précédent, fichier de synthèse du journal de paie (D8) | Fait |
+| PAY-001/002 périodes et checklist complètes, PAY-007 régularisation, PAY-009 règles versionnées, PAY-010 points Excel | À faire (PAY-010 : arbitrages à demander point par point) |
 | TPS-002 postes et rotations (gardiens) | Première version : planning mensuel + génération de cycle |
 | ESS-001/002/006 portail salarié (Mon espace : dernier bulletin, soldes, planning, demandes d'attestation / acompte / correction de présence / données personnelles) et traitement RH | Première version faite ; notifications e-mail Gmail et délégation d'approbation à venir |
 
