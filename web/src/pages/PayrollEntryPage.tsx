@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createColumnHelper } from '@tanstack/react-table'
-import { ArrowLeft, Ban, CheckCircle2, ChevronRight, Play, Printer, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Ban, BookOpen, CheckCircle2, ChevronRight, Play, Printer, Trash2, X } from 'lucide-react'
 import { DeletePayrollModal } from '../components/DeletePayrollModal'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -84,6 +84,7 @@ export default function PayrollEntryPage() {
         title={`Paie de ${monthLabel(e.period_start)}`}
         description={<span className="inline-flex flex-wrap items-center gap-2">Du {date(e.period_start)} au {date(e.period_end)} · paiement par {e.payment_mode} <Badge value={e.status} /></span>}
         actions={<>
+          {rows.length > 0 && <Button icon={<BookOpen className="h-4 w-4" />} onClick={() => nav(`/paie/${id}/livre`)}>Livre de paie imprimable</Button>}
           {rows.length > 0 && <Button icon={<Printer className="h-4 w-4" />} onClick={() => nav(`/paie/${id}/imprimer`)}>Imprimer les bulletins</Button>}
           {can('paie') && editable && <Button icon={<Play className="h-4 w-4" />} loading={run.isPending} onClick={() => run.mutate()}>{rows.length ? 'Recalculer' : 'Calculer les bulletins'}</Button>}
           {can('paie') && e.status === 'Calculée' && <Button variant="primary" icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => setConfirm('submit')}>Valider la paie</Button>}

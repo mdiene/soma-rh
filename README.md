@@ -80,6 +80,9 @@ Migrations dans `supabase/migrations/` (déjà appliquées sur le projet) :
 | `…29160000_lot6_matricule.sql` | séquence et déclencheurs du matricule, `preview_employee_number`, `admin_change_employee_number`, `audit_log` |
 | `…29180000_lot7_referentiels.sql` | `contract_types`, `payment_modes`, activation / journal des référentiels ; le moteur lit la nature du contrat dans le référentiel |
 | `…30100000_durcissement_triggers.sql` | fonctions de déclencheur retirées de l'API |
+| `…30110000_presences_dans_paie.sql` | `run_payroll_entry` reprend d'abord les présences (absences, maladie, heures sup.) dans les variables du mois |
+
+**Impressions** : bon de congé (fenêtre de la demande), fiche salarié complète, livre de paie mensuel au modèle Sage (`/paie/:id/livre`, 7 salariés par page A4 + colonne Total).
 
 Après chaque modification du moteur, le contrôle de non-régression recalcule les 25 bulletins d'août 2026
 avec les valeurs du classeur (voir [l'analyse](docs/ANALYSE_EXCEL.md#3-validation-du-moteur-soma-rh)).
