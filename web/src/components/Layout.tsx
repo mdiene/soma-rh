@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import {
   BarChart3, CalendarCheck2, CalendarDays, Calculator, FileSpreadsheet, LayoutDashboard, LogOut, Menu,
-  Settings, SlidersHorizontal, Users, Wallet,
+  History, Settings, SlidersHorizontal, Users, Wallet,
 } from 'lucide-react'
 import { Suspense, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
@@ -30,7 +30,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
     ],
   },
   // sans rôle : accès aux paramètres pour déclarer le premier administrateur
-  { title: 'Administration', items: [{ to: '/parametres', label: 'Paramètres', icon: Settings, roles: ['rh', 'paie'], withoutRole: true }] },
+  { title: 'Administration', items: [{ to: '/journal', label: 'Journal des modifications', icon: History, roles: ['rh'] }, { to: '/parametres', label: 'Paramètres', icon: Settings, roles: ['rh', 'paie'], withoutRole: true }] },
 ]
 
 export function Layout() {

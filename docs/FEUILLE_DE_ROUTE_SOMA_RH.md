@@ -112,7 +112,7 @@ Légende : ✔ présent · ✘ absent. Les barres donnent une couverture indicat
 
 | # | Constat | Gravité | Lot |
 |---|---|---|---|
-| C1 | **Aucun garde-fou sur les périodes de paie.** À la date du 30/10/2026 : le traitement de **novembre 2026 est validé**, **octobre est absent**, **juillet est resté « Calculée »**. Rien n'interdit de valider un mois futur ni de sauter un mois. | Élevée | 1 |
+| C1 | **Aucun garde-fou sur les périodes de paie.** Lors de l'analyse, un traitement de novembre 2026 était validé alors qu'octobre manquait (constat non reproduit lors du recontrôle du 30/10 : la base ne contient plus que janvier à juin 2026, tous validés). Rien n'interdisait de valider un mois futur ni de sauter un mois ; **corrigé au lot 0 (SOC-003, appliqué le 30/10/2026)**. | Élevée | 1 |
 | C2 | **Audit incomplet.** Les modifications des salariés, structures salariales, variables, présences et bulletins ne laissent aucune trace (auteur, avant/après, motif). La correction manuelle des variables est désormais possible : elle doit être journalisée. | Élevée | 0 |
 | C3 | **Pas d'immutabilité forte des bulletins validés** au-delà du statut ; pas de snapshot des paramètres utilisés (taux, barèmes, rubriques). Un changement de paramètre peut rendre un ancien bulletin non reproductible. | Élevée | 1 |
 | C4 | **Mono-société de fait** : aucune règle de sécurité ne filtre par société. | Moyenne (devient élevée si vente en SaaS) | 0 / dédié |
@@ -132,7 +132,7 @@ Le canevas v1.0 est solide dans sa vision (paie locale explicable, portail, audi
 
 ### 2.1 Ce qui est confirmé et conservé
 
-- La **priorité 1 = gouvernance de la paie** : confirmée par la constatation C1 (novembre validé, octobre absent).
+- La **priorité 1 = gouvernance de la paie** : confirmée par la constatation C1 (absence de garde-fou sur les périodes).
 - Le **modèle de versionnement des règles** (`rule_set`) : indispensable, voir C3 et C7.
 - Les **principes non négociables** (calcul en base, précision totale, paie validée immuable, IA qui propose sans valider) : conservés tels quels.
 - La **liste des décisions à prendre** (§9 du canevas) : reprise et hiérarchisée en §10.

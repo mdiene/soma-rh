@@ -283,6 +283,10 @@ type AuditRow = { id: number; occurred_at: string; actor: string | null; table_n
 const TABLE_LABEL: Record<string, string> = {
   designations: 'Emploi', contract_types: 'Type de contrat', collective_agreements: 'Convention collective',
   employee_grades: 'Catégorie', payment_modes: 'Mode de paiement', employees: 'Salarié',
+  salary_structure_assignments: 'Affectation de structure', payroll_inputs: 'Variables du mois',
+  additional_salaries: 'Salaire additionnel', attendance: 'Présence', leave_applications: 'Congé',
+  salary_slips: 'Bulletin', payroll_entries: 'Traitement de paie', payroll_settings: 'Paramètre de paie',
+  user_roles: 'Rôle utilisateur',
 }
 const HIDDEN = new Set(['updated_at', 'updated_by', 'created_at', 'id'])
 
@@ -294,9 +298,20 @@ function changes(r: AuditRow): string {
 }
 
 export function AuditLogView() {
+  const [tableF, setTableF] = useState('')
+  const [text, setText] = useState('')
   const q = useQuery({
-    queryKey: ['audit-log'],
-    queryFn: async () => unwrap(await db.from('audit_log').select('*').order('occurred_at', { ascending: false }).limit(200)) as AuditRow[],
+    queryKey: ['audit-log', tableF],
+    queryFn: async () => {
+      let req = db.from('audit_log').select('*').order('occurred_at', { ascending: false }).limit(500)
+      if (tableF) req = req.eq('table_name', tableF)
+      return unwrap(await req) as AuditRow[]
+    },
+  })
+  const rows = (q.data ?? []).filter((r) => {
+    if (!text.trim()) return true
+    const hay = `${r.record_key ?? ''} ${r.action} ${changes(r)}`.toLowerCase()
+    return hay.includes(text.trim().toLowerCase())
   })
   const emails = useQuery({
     queryKey: ['user-emails-audit', (q.data ?? []).length],
@@ -312,16 +327,23 @@ export function AuditLogView() {
     <section className="panel">
       <div className="border-b border-line px-4 py-3">
         <h2 className="text-base">Journal des modifications</h2>
-        <p className="text-xs text-ink-muted">200 dernières opérations sur les référentiels et les matricules, enregistrées automatiquement par la base.</p>
+        <p className="text-xs text-ink-muted">500 dernières opérations (salariés, variables, présences, congés, bulletins, traitements, paramètres, rôles, référentiels), enregistrées automatiquement par la base.</p>
+      </div>
+      <div className="flex flex-wrap gap-2 px-4 pt-3">
+        <select className="field w-56" aria-label="Filtrer par objet" value={tableF} onChange={(e) => setTableF(e.target.value)}>
+          <option value="">Tous les objets</option>
+          {Object.entries(TABLE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+        <input className="field w-64" type="search" placeholder="Rechercher (matricule, champ, valeur)…" aria-label="Rechercher" value={text} onChange={(e) => setText(e.target.value)} />
       </div>
       <div className="px-4 pt-2"><ErrorNote error={q.error} /></div>
-      {q.isLoading ? <div className="px-4"><Spinner /></div> : (q.data ?? []).length === 0 ? <p className="px-4 py-6 text-sm text-ink-muted">Aucune modification enregistrée pour l’instant.</p> : (
+      {q.isLoading ? <div className="px-4"><Spinner /></div> : rows.length === 0 ? <p className="px-4 py-6 text-sm text-ink-muted">Aucune modification enregistrée pour l’instant.</p> : (
         <div className="max-h-[32rem] overflow-auto">
           <table className="w-full border-separate border-spacing-0 text-sm">
             <thead><tr className="text-left text-xs font-semibold text-ink-soft">
               {['Date', 'Utilisateur', 'Référentiel', 'Valeur', 'Opération', 'Détail'].map((h) => <th key={h} className="sticky top-0 border-b border-line bg-paper px-3 py-2">{h}</th>)}
             </tr></thead>
-            <tbody>{q.data!.map((r) => (
+            <tbody>{rows.map((r) => (
               <tr key={r.id} className="align-top">
                 <td className="whitespace-nowrap border-b border-line/70 px-3 py-1.5 text-xs">{new Date(r.occurred_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</td>
                 <td className="border-b border-line/70 px-3 py-1.5 text-xs">{r.actor ? (emails.data?.get(r.actor) ?? 'utilisateur') : 'système'}</td>

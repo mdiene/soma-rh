@@ -17,6 +17,7 @@ const PayrollEntryPage = lazy(() => import('./pages/PayrollEntryPage'))
 const SalarySlipPage = lazy(() => import('./pages/SalarySlipPage'))
 const PrintSlipsPage = lazy(() => import('./pages/PrintSlipsPage'))
 const PayrollBookPrintPage = lazy(() => import('./pages/PayrollBookPrintPage'))
+const JournalPage = lazy(() => import('./pages/JournalPage'))
 const SimulatorPage = lazy(() => import('./pages/SimulatorPage'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
@@ -70,6 +71,7 @@ export default function App() {
         <Route path="bulletins/imprimer" element={<PrintSlipsPage />} />
         <Route path="bulletins/:id" element={<SalarySlipPage />} />
         <Route path="etats" element={<RoleGuard roles={staff}><ReportsPage /></RoleGuard>} />
+        <Route path="journal" element={<RoleGuard roles={['rh']}><JournalPage /></RoleGuard>} />
         <Route path="parametres" element={roles.length === 0 ? <SettingsPage /> : <RoleGuard roles={staff}><SettingsPage /></RoleGuard>} />
         <Route path="mes-bulletins" element={<MySlipsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
