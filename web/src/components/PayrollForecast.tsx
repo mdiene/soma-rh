@@ -66,7 +66,7 @@ export function PayrollForecast() {
       const nh = i >= Number(hireIn) ? Number(hires) || 0 : 0
       hc += nh
       cost += nh * avg * (i >= Number(raiseIn) ? 1 + raise : 1)
-      out.push({ month: m, label: monthLabel(m).slice(0, 4) + ' ' + m.slice(2, 4), headcount: hc, cout: Math.round(cost), sansChangement: Math.round(cost0), hc0 })
+      out.push({ month: m, label: monthLabel(m).slice(0, 3) + '. ' + m.slice(2, 4), headcount: hc, cout: Math.round(cost), sansChangement: Math.round(cost0), hc0 })
     }
     return out
   }, [q.data, horizon, renew, raisePct, raiseIn, hires, hireIn])
