@@ -210,20 +210,36 @@ function SalaryAssignment({ employee }: { employee: Emp }) {
     queryKey: ['structures'],
     queryFn: async () => unwrap(await supabase.from('salary_structures').select('*').eq('is_active', true)),
   })
-  const current = q.data?.[0]
+  // affectation éditée : la plus récente par défaut, ou une version choisie dans l'historique
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const current = q.data?.find((a) => a.id === selectedId) ?? q.data?.[0]
   const [f, setF] = useState<Partial<Assign>>({})
   useEffect(() => {
     setF(current ?? { from_date: currentPeriod(), sursalaire: 0, fees: 0, other_fixed: 0, transport_mode: 'Prime de transport', leave_paid_monthly: true })
   }, [current])
   const [period, setPeriod] = useState(currentPeriod())
+  const original = f.id ? q.data?.find((a) => a.id === f.id) : undefined
+  const movedEarlier = !!original && !!f.from_date && f.from_date < original.from_date
 
   const save = useMutation({
     mutationFn: async () => {
-      const payload = omit({ ...f, employee_id: employee.id, structure_id: f.structure_id ?? structures.data?.[0]?.id } as Assign, 'created_at', 'updated_at')
-      return unwrap(await supabase.from('salary_structure_assignments').upsert(payload, { onConflict: 'employee_id,from_date' }).select().single())
+      const fromDate = f.from_date
+      if (!fromDate) throw new Error('La date « En vigueur à partir du » est obligatoire.')
+      const duplicate = q.data?.find((a) => a.id !== f.id && a.from_date === fromDate)
+      if (duplicate) throw new Error(`Une affectation commence déjà le ${fromDate.split('-').reverse().join('/')}. Modifiez-la depuis l'historique ou choisissez une autre date.`)
+      const payload = omit({ ...f, employee_id: employee.id, structure_id: f.structure_id ?? structures.data?.[0]?.id } as Assign, 'id', 'created_at', 'updated_at')
+      // modification d'une affectation existante : mise à jour par identifiant (la date peut changer,
+      // y compris vers une date antérieure) ; sinon création d'une nouvelle version
+      if (f.id) return unwrap(await supabase.from('salary_structure_assignments').update(payload).eq('id', f.id).select().single())
+      return unwrap(await supabase.from('salary_structure_assignments').insert(payload).select().single())
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['assignment', employee.id] }),
+    onSuccess: (row) => { setSelectedId(row.id); qc.invalidateQueries({ queryKey: ['assignment', employee.id] }) },
   })
+  function newVersion() {
+    save.reset()
+    setSelectedId(null)
+    setF({ ...omit((current ?? {}) as Assign, 'id', 'created_at', 'updated_at'), from_date: currentPeriod() })
+  }
   const solve = useMutation({
     mutationFn: async () => {
       const { start, end } = monthBounds(period)
@@ -237,10 +253,36 @@ function SalaryAssignment({ employee }: { employee: Emp }) {
   return (
     <Section
       title="Structure salariale"
-      actions={!readOnly && <Button size="sm" variant="primary" loading={save.isPending} onClick={() => save.mutate()} icon={<Save className="h-3.5 w-3.5" />}>Enregistrer</Button>}
+      actions={!readOnly && (
+        <div className="flex gap-2">
+          {q.data && q.data.length > 0 && <Button size="sm" variant="ghost" onClick={newVersion}>Nouvelle version</Button>}
+          <Button size="sm" variant="primary" loading={save.isPending} onClick={() => save.mutate()} icon={<Save className="h-3.5 w-3.5" />}>Enregistrer</Button>
+        </div>
+      )}
     >
       {q.isLoading ? <Spinner /> : (
         <fieldset disabled={readOnly} className="space-y-4">
+          {q.data && q.data.length > 1 && (
+            <div className="flex flex-wrap items-center gap-1.5 text-xs" aria-label="Historique des affectations">
+              <span className="text-ink-muted">Historique :</span>
+              {q.data.map((a) => (
+                <button key={a.id} type="button" onClick={() => { save.reset(); setSelectedId(a.id) }}
+                  className={`rounded border px-2 py-0.5 ${a.id === f.id ? 'border-river bg-river-light font-semibold text-river-dark' : 'border-line hover:border-river'}`}>
+                  depuis le {a.from_date.split('-').reverse().join('/')}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-ink-soft">
+            {f.id ? 'Vous modifiez l’affectation existante' : 'Nouvelle affectation'} : la date peut être avancée ou reculée. Les bulletins déjà validés ne sont jamais recalculés ;
+            la nouvelle valeur s’applique aux traitements calculés ou recalculés ensuite.
+          </p>
+          {movedEarlier && (
+            <p className="rounded border border-phosphate bg-phosphate-light px-3 py-2 text-xs text-ink">
+              Date avancée du {original!.from_date.split('-').reverse().join('/')} au {f.from_date!.split('-').reverse().join('/')} : les mois validés de cette période gardent leurs bulletins ; un mois encore « Calculé » prendra cette structure s’il est relancé.
+            </p>
+          )}
+          {save.isSuccess && <p role="status" className="rounded border border-river/30 bg-river-light px-3 py-2 text-xs text-river-dark">Structure salariale enregistrée.</p>}
           <div className="grid gap-3 sm:grid-cols-2">
             <TextField label="En vigueur à partir du" type="date" value={f.from_date ?? ''} onChange={(e) => setF((x) => ({ ...x, from_date: e.target.value }))} />
             <TextField label="Salaire de base (vide = minimum de la catégorie)" type="number" value={f.base_salary ?? ''} onChange={num('base_salary')} />
