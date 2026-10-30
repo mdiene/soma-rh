@@ -50,6 +50,31 @@ export default function PayrollInputsPage() {
   const [rows, setRows] = useState<Record<string, RowState>>({})
   const [dirty, setDirty] = useState<Set<string>>(new Set())
 
+  // Heures déjà saisies dans la grille des présences : elles alimentent directement ces colonnes.
+  const attendance = useQuery({
+    queryKey: ['attendance_totals', period],
+    queryFn: async () => {
+      const end = new Date(Date.UTC(Number(period.slice(0, 4)), Number(period.slice(5, 7)), 0)).toISOString().slice(0, 10)
+      const list = unwrap(await supabase.from('attendance')
+        .select('employee_id,status,absence_hours,sick_hours,overtime_15,overtime_40,overtime_60,overtime_100')
+        .gte('attendance_date', period).lte('attendance_date', end).limit(5000))
+      const byEmp = new Map<string, Partial<Record<InputKey, number>>>()
+      for (const a of list) {
+        const t = byEmp.get(a.employee_id) ?? {}
+        t.absence_hours = (t.absence_hours ?? 0) + (a.status === 'Congé' ? 0 : Number(a.absence_hours))
+        t.sick_leave_hours = (t.sick_leave_hours ?? 0) + Number(a.sick_hours)
+        t.overtime_15 = (t.overtime_15 ?? 0) + Number(a.overtime_15)
+        t.overtime_40 = (t.overtime_40 ?? 0) + Number(a.overtime_40)
+        t.overtime_60 = (t.overtime_60 ?? 0) + Number(a.overtime_60)
+        t.overtime_100 = (t.overtime_100 ?? 0) + Number(a.overtime_100)
+        byEmp.set(a.employee_id, t)
+      }
+      return byEmp
+    },
+  })
+  const fromAtt = (id: string, key: InputKey) => attendance.data?.get(id)?.[key]
+  const valueOf = (id: string, key: InputKey) => fromAtt(id, key) ?? rows[id]?.inputs[key] ?? 0
+
   const active = useMemo(() => (employees.data ?? []).filter((e) => e.status === 'Active'), [employees.data])
   const [search, setSearch] = useState('')
   const visible = useMemo(() => {
@@ -83,7 +108,10 @@ export default function PayrollInputsPage() {
   const save = useMutation({
     mutationFn: async () => {
       const ids = [...dirty]
-      const inputRows = ids.map((id) => ({ employee_id: id, period, ...rows[id].inputs }))
+      const inputRows = ids.map((id) => ({
+        employee_id: id, period, ...rows[id].inputs,
+        ...Object.fromEntries(INPUT_COLS.map((c) => [c.key, valueOf(id, c.key)])),
+      }))
       if (inputRows.length) unwrap(await supabase.from('payroll_inputs').upsert(inputRows, { onConflict: 'employee_id,period' }).select('id'))
       const upserts = ids.flatMap((id) => Object.entries(rows[id].adds).filter(([, v]) => v > 0).map(([code, amount]) => ({ employee_id: id, period, component_code: code, amount })))
       if (upserts.length) unwrap(await supabase.from('additional_salaries').upsert(upserts, { onConflict: 'employee_id,period,component_code' }).select('id'))
@@ -103,13 +131,13 @@ export default function PayrollInputsPage() {
   }
 
   const readOnly = !can('paie')
-  const loading = data.isLoading || employees.isLoading || components.isLoading
+  const loading = data.isLoading || employees.isLoading || components.isLoading || attendance.isLoading
 
   return (
     <>
       <PageHeader
         title="Variables du mois"
-        description="Heures, primes et retenues du mois, saisies avant le calcul de la paie. Les montants des primes et retenues sont toujours positifs."
+        description="Heures, primes et retenues du mois, saisies avant le calcul de la paie. Absences, maladie et heures supplémentaires issues de la grille des présences (cellules bleutées) sont reprises automatiquement. Les montants des primes et retenues sont toujours positifs."
         actions={<>
           <TextField label="Mois de paie" type="month" value={period.slice(0, 7)} onChange={(e) => setPeriod(`${e.target.value}-01`)} className="w-44" />
           {!readOnly && <Button icon={<Copy className="h-4 w-4" />} loading={copyPrev.isPending} onClick={() => copyPrev.mutate()}>Reprendre {monthLabel(prevPeriod(period))}</Button>}
@@ -156,13 +184,18 @@ export default function PayrollInputsPage() {
                     <td className={clsx('sticky left-0 z-10 whitespace-nowrap px-2 py-1', isDirty ? 'bg-phosphate-light' : 'bg-white')}>
                       <span className="text-ink-muted">{e.employee_number}</span> {e.first_name} {e.last_name}
                     </td>
-                    {INPUT_COLS.map((c) => (
-                      <td key={c.key} className="px-1 py-1">
-                        <input type="number" disabled={readOnly} aria-label={`${c.label} — ${e.last_name}`} step={'step' in c ? c.step : 1}
-                          className="field w-[5.5rem] px-1.5 py-1 text-right" value={r.inputs[c.key] || ''} placeholder="0"
-                          onChange={(ev) => setVal(e.id, 'inputs', c.key, ev.target.value)} />
-                      </td>
-                    ))}
+                    {INPUT_COLS.map((c) => {
+                      const auto = fromAtt(e.id, c.key) !== undefined
+                      return (
+                        <td key={c.key} className="px-1 py-1">
+                          <input type="number" disabled={readOnly || auto} aria-label={`${c.label} — ${e.last_name}`} step={'step' in c ? c.step : 1}
+                            title={auto ? 'Calculé depuis la grille des présences' : undefined}
+                            className={clsx('field w-[5.5rem] px-1.5 py-1 text-right', auto && 'border-river/30 bg-river-light text-river-dark')}
+                            value={valueOf(e.id, c.key) || ''} placeholder="0"
+                            onChange={(ev) => setVal(e.id, 'inputs', c.key, ev.target.value)} />
+                        </td>
+                      )
+                    })}
                     {variable.map((c) => (
                       <td key={c.code} className="px-1 py-1">
                         <input type="number" disabled={readOnly} aria-label={`${c.name} — ${e.last_name}`} min={0}

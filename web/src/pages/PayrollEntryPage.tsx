@@ -34,7 +34,7 @@ const columns = [
   col.accessor('status', { header: 'État', cell: (c) => <Badge value={c.getValue() ?? ''} /> }),
 ]
 
-type RunResult = { calculated: number; errors: { employee_number: string; name: string; error: string }[] }
+type RunResult = { calculated: number; attendance_synced?: number; errors: { employee_number: string; name: string; error: string }[] }
 
 export default function PayrollEntryPage() {
   const { id } = useParams()
@@ -102,6 +102,7 @@ export default function PayrollEntryPage() {
             <p className="flex-1">
               <strong>{result.calculated}</strong> bulletin(s) calculé(s)
               {result.errors.length > 0 && <>, <strong className="text-signal">{result.errors.length}</strong> salarié(s) non calculé(s)</>}.
+              {!!result.attendance_synced && <span className="text-ink-soft"> Présences reprises pour {result.attendance_synced} salarié(s).</span>}
             </p>
             <button type="button" onClick={() => setResult(null)} className="rounded p-1 text-ink-muted hover:bg-paper hover:text-ink" aria-label="Fermer le compte rendu">
               <X className="h-4 w-4" />
