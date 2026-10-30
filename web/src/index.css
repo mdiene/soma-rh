@@ -73,3 +73,12 @@
   .grouped-table tr { break-inside: avoid; }
 }
 @page etat { size: A4 landscape; margin: 8mm; }
+
+/* documents imprimés depuis une fenêtre popup (bon de congé, fiche salarié) */
+@media screen { .print-portal { display: none; } }
+@media print {
+  body.printing-portal > *:not(.print-portal) { display: none !important; }
+  .print-portal { display: block; color: #1D2A33; font-size: 12px; }
+  .print-portal .sheet { break-after: page; }
+  .print-portal .sheet:last-child { break-after: auto; }
+}

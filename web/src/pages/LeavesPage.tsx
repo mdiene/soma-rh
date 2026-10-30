@@ -3,14 +3,15 @@ import { createColumnHelper } from '@tanstack/react-table'
 import { Check, Plus, X } from 'lucide-react'
 import { useState } from 'react'
 import clsx from 'clsx'
-import { supabase, unwrap, type Tables, type Views } from '../lib/supabase'
+import { supabase, unwrap, type Views } from '../lib/supabase'
+import { LeaveDetailModal, type LeaveApp } from '../components/LeaveDetailModal'
 import { useAuth } from '../lib/auth'
 import { useEmployees, useLeaveTypes } from '../lib/queries'
 import { date, num } from '../lib/format'
 import { DataTable } from '../components/DataTable'
 import { Badge, Button, ErrorNote, Modal, PageHeader, SelectField, Spinner, TextField } from '../components/ui'
 
-type App = Tables<'leave_applications'> & { employee: { employee_number: string; first_name: string; last_name: string } | null; type: { name: string } | null }
+type App = LeaveApp
 const col = createColumnHelper<App>()
 const bcol = createColumnHelper<Views<'v_leave_balances'>>()
 
@@ -20,11 +21,12 @@ export default function LeavesPage() {
   const { can, session } = useAuth()
   const qc = useQueryClient()
   const isHr = can('rh')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const apps = useQuery({
     queryKey: ['leave_applications'],
     queryFn: async () => unwrap(await supabase.from('leave_applications')
-      .select('*, employee:employees(employee_number, first_name, last_name), type:leave_types(name)')
+      .select('*, employee:employees(employee_number, first_name, last_name, designation:designations(name)), type:leave_types(name)')
       .order('from_date', { ascending: false })) as App[],
   })
   const balances = useQuery({
@@ -50,7 +52,7 @@ export default function LeavesPage() {
     col.display({
       id: 'actions', header: '',
       cell: ({ row }) => isHr && row.original.status === 'Ouverte' && (
-        <div className="flex gap-1">
+        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
           <Button size="sm" icon={<Check className="h-3.5 w-3.5" />} onClick={() => decide.mutate({ id: row.original.id, status: 'Approuvée' })}>Approuver</Button>
           <Button size="sm" variant="ghost" icon={<X className="h-3.5 w-3.5" />} onClick={() => decide.mutate({ id: row.original.id, status: 'Rejetée' })}>Rejeter</Button>
         </div>
@@ -85,8 +87,9 @@ export default function LeavesPage() {
         ))}
       </div>
       <ErrorNote error={apps.error || decide.error || balances.error} />
-      {tab === 'demandes' ? (apps.isLoading ? <Spinner /> : <DataTable data={apps.data ?? []} columns={columns} exportName="conges" />)
+      {tab === 'demandes' ? (apps.isLoading ? <Spinner /> : <DataTable data={apps.data ?? []} columns={columns} exportName="conges" onRowClick={(a) => setSelectedId(a.id)} />)
         : (balances.isLoading ? <Spinner /> : <DataTable data={balances.data ?? []} columns={bcolumns} exportName="soldes-conges" />)}
+      <LeaveDetailModal app={(apps.data ?? []).find((a) => a.id === selectedId) ?? null} onClose={() => setSelectedId(null)} />
       <RequestModal open={open === 'request'} onClose={() => setOpen(null)} />
       <AllocationModal open={open === 'alloc'} onClose={() => setOpen(null)} />
     </>
