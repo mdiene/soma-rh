@@ -66,6 +66,12 @@ export default function PayrollEntryPage() {
     mutationFn: async () => unwrap(await supabase.rpc('submit_payroll_entry', { p_payroll_entry_id: id! })),
     onSuccess: () => { setConfirm(null); refresh() },
   })
+  type Check = { niveau: 'erreur' | 'alerte' | 'info'; code: string; salarie: string; message: string }
+  const checks = useQuery({
+    queryKey: ['payroll_checks', id, entry.data?.status, slips.data?.length],
+    enabled: !!id && !!entry.data && entry.data.status !== 'Annulée' && (slips.data?.length ?? 0) > 0,
+    queryFn: async () => (unwrap(await supabase.rpc('payroll_entry_checks', { p_payroll_entry_id: id! })) ?? []) as unknown as Check[],
+  })
   const cancel = useMutation({
     mutationFn: async () => unwrap(await supabase.rpc('cancel_payroll_entry', { p_payroll_entry_id: id! })),
     onSuccess: () => { setConfirm(null); refresh() },
@@ -87,7 +93,7 @@ export default function PayrollEntryPage() {
           {rows.length > 0 && <Button icon={<BookOpen className="h-4 w-4" />} onClick={() => nav(`/paie/${id}/livre`)}>Livre de paie imprimable</Button>}
           {rows.length > 0 && <Button icon={<Printer className="h-4 w-4" />} onClick={() => nav(`/paie/${id}/imprimer`)}>Imprimer les bulletins</Button>}
           {can('paie') && editable && <Button icon={<Play className="h-4 w-4" />} loading={run.isPending} onClick={() => run.mutate()}>{rows.length ? 'Recalculer' : 'Calculer les bulletins'}</Button>}
-          {can('paie') && e.status === 'Calculée' && <Button variant="primary" icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => setConfirm('submit')}>Valider la paie</Button>}
+          {can('admin') && e.status === 'Calculée' && <Button variant="primary" icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => setConfirm('submit')}>Valider la paie</Button>}
           {can('admin') && e.status !== 'Annulée' && <Button variant="ghost" icon={<Ban className="h-4 w-4" />} onClick={() => setConfirm('cancel')}>Annuler</Button>}
           {can('paie') && (e.status !== 'Validée' || can('admin')) && (
             <Button variant="ghost" className="text-signal hover:bg-signal-light hover:text-signal" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirm('delete')}>Supprimer</Button>
@@ -126,6 +132,29 @@ export default function PayrollEntryPage() {
           )}
         </div>
       )}
+
+      {(checks.data?.length ?? 0) > 0 && (() => {
+        const list = checks.data!
+        const n = (l: Check['niveau']) => list.filter((c) => c.niveau === l).length
+        const tone = { erreur: 'text-signal', alerte: 'text-phosphate', info: 'text-ink-soft' } as const
+        const label = { erreur: 'Erreur', alerte: 'Alerte', info: 'Info' } as const
+        return (
+          <details className="group mb-4 rounded border border-line bg-white text-sm" open={n('erreur') > 0}>
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3">
+              <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" aria-hidden />
+              <strong>Contrôles avant validation</strong>
+              <span className="text-ink-soft">
+                {n('erreur')} erreur(s) · {n('alerte')} alerte(s) · {n('info')} information(s)
+              </span>
+            </summary>
+            <ul className="max-h-72 space-y-1 overflow-y-auto border-t border-line px-4 py-3">
+              {list.map((c, i) => (
+                <li key={i}><span className={`font-medium ${tone[c.niveau]}`}>{label[c.niveau]}</span> · {c.salarie} : {c.message}</li>
+              ))}
+            </ul>
+          </details>
+        )
+      })()}
 
       {rows.length > 0 && (
         <div className="panel mb-6 grid grid-cols-2 gap-x-6 gap-y-4 p-4 sm:grid-cols-3 lg:grid-cols-6">

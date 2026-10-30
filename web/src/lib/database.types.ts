@@ -866,6 +866,7 @@ export type Database = {
           period_start: string
           posting_date: string
           status: string
+          settings_snapshot: Json | null
           submitted_at: string | null
           submitted_by: string | null
           updated_at: string
@@ -881,6 +882,7 @@ export type Database = {
           period_start: string
           posting_date?: string
           status?: string
+          settings_snapshot?: Json | null
           submitted_at?: string | null
           submitted_by?: string | null
           updated_at?: string
@@ -896,6 +898,7 @@ export type Database = {
           period_start?: string
           posting_date?: string
           status?: string
+          settings_snapshot?: Json | null
           submitted_at?: string | null
           submitted_by?: string | null
           updated_at?: string
@@ -1809,6 +1812,7 @@ export type Database = {
         Args: { p_payroll_entry_id: string }
         Returns: undefined
       }
+      payroll_entry_checks: { Args: { p_payroll_entry_id: string }; Returns: Json }
       claim_first_admin: { Args: never; Returns: boolean }
       compute_income_tax: {
         Args: { p_date: string; p_monthly_gross: number; p_parts: number }

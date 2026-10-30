@@ -66,6 +66,20 @@ Quatre décisions bloquent le démarrage ; les autres sont en §10.
 
 ---
 
+### Périmètre révisé après validation (30/10/2026)
+
+| Élément | Décision |
+|---|---|
+| Multi-société / `company_id` généralisé (SOC-007) | Reporté ; rester mono-société |
+| Données de démonstration anonymisées (SOC-008) | Abandonné ; les données réelles restent telles quelles |
+| Droits de paie | Préparation par rh / paie / admin ; **validation et clôture réservées à l'admin** (appliqué) |
+| Lot 3 | Réduit au **traitement** : pas de format bancaire, pas de transmission IPRES/CSS/impôts (le comptable s'en charge) ; ajout d'un fichier de synthèse du journal de paie |
+| Lot 4 | **En attente** : un système de gestion documentaire (scan des bons médicaux, contrats…) sera mis en place ensuite |
+| Lot 5 | Poste et rotation des gardiens (24 h/24) prioritaires ; équipements/dotations hors périmètre (HSQE) |
+| Application mobile | PWA uniquement |
+
+---
+
 ## 1. État réel de l'application (constaté le 30/10/2026)
 
 ### 1.1 Chiffres vérifiés
@@ -629,20 +643,20 @@ Cases à cocher une fois tranchées. « Défaut » = ce que je ferai si vous ne 
 
 ### Avant le lot 2
 
-- [ ] **D5** Fournisseur d'e-mail / SMS / WhatsApp autorisé · *défaut : e-mail transactionnel d'abord*
-- [ ] **D6** Politique de conservation (bulletins, CNI, contrats, justificatifs) · *défaut : à fixer avec un juriste*
-- [ ] **D7** Niveau de signature (simple validation interne ou signature électronique) · *défaut : validation interne*
+- [x] **D5** E-mail via Gmail ; WhatsApp à intégrer si gratuit (à instruire : l'API WhatsApp Business est payante au-delà des conversations gratuites, alternative = lien « click-to-chat » gratuit) — *validé 30/10/2026*
+- [x] **D6** Valeurs par défaut — *validé 30/10/2026*
+- [x] **D7** Simple validation interne — *validé 30/10/2026*
 
 ### Avant le lot 3
 
-- [ ] **D8** Formats et canaux officiels IPRES, CSS, DGID · *à obtenir auprès des organismes*
-- [ ] **D9** Axes analytiques indispensables (site, département, projet, centre de coût) · *défaut : site + centre de coût*
-- [ ] **D10** Règles Excel à conserver ou à corriger (transport/absences, indemnité de licenciement, IPM prestataires, arrondis, taux maladie) · *défaut : conserver à l'identique tant qu'une décision écrite n'est pas prise*
+- [x] **D8** Valeur par défaut : pas de transmission aux organismes pour l'instant ; le comptable la fait lui-même. On produit un fichier de synthèse du journal de paie — *validé 30/10/2026*
+- [x] **D9** Valeur par défaut (site + centre de coût) — *validé 30/10/2026*
+- [x] **D10** Excel = base ; si une meilleure règle existe, arbitrer et la mettre en place (décision écrite et test de référence par point) — *validé 30/10/2026*
 
 ### Avant le lot 5
 
-- [ ] **D11** Régimes de travail réels sur site (rotations, postes) et primes associées
-- [ ] **D12** Habilitations et équipements obligatoires par poste
+- [x] **D11** Gardiens en présence 24 h/24 : prévoir rotation et affectation par poste — *validé 30/10/2026*
+- [x] **D12** Équipements et dotations : module développé ailleurs, géré par le HSQE (hors périmètre SOMA-RH) — *validé 30/10/2026*
 
 ---
 
