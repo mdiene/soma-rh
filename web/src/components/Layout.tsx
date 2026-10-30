@@ -8,9 +8,9 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth, type Role } from '../lib/auth'
 import { Spinner } from './ui'
 
-type Item = { to: string; label: string; icon: React.ElementType; roles?: Role[] }
+type Item = { to: string; label: string; icon: React.ElementType; roles?: Role[]; withoutRole?: boolean }
 const GROUPS: { title: string; items: Item[] }[] = [
-  { title: 'Pilotage', items: [{ to: '/', label: 'Tableau de bord', icon: LayoutDashboard }] },
+  { title: 'Pilotage', items: [{ to: '/', label: 'Tableau de bord', icon: LayoutDashboard, roles: ['rh', 'paie'] }] },
   {
     title: 'Personnel',
     items: [
@@ -29,7 +29,8 @@ const GROUPS: { title: string; items: Item[] }[] = [
       { to: '/mes-bulletins', label: 'Mes bulletins', icon: BarChart3, roles: ['salarie', 'rh', 'paie'] },
     ],
   },
-  { title: 'Administration', items: [{ to: '/parametres', label: 'Paramètres', icon: Settings }] },
+  // sans rôle : accès aux paramètres pour déclarer le premier administrateur
+  { title: 'Administration', items: [{ to: '/parametres', label: 'Paramètres', icon: Settings, roles: ['rh', 'paie'], withoutRole: true }] },
 ]
 
 export function Layout() {
@@ -39,7 +40,7 @@ export function Layout() {
   const nav = (
     <nav className="flex flex-1 flex-col gap-5 overflow-y-auto px-3 py-4" aria-label="Navigation principale">
       {GROUPS.map((g) => {
-        const items = g.items.filter((i) => !i.roles || can(...i.roles))
+        const items = g.items.filter((i) => !i.roles || can(...i.roles) || (i.withoutRole && roles.length === 0))
         if (!items.length) return null
         return (
           <div key={g.title}>

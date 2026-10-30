@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createColumnHelper } from '@tanstack/react-table'
-import { ArrowLeft, Ban, CheckCircle2, Play, Printer, Trash2 } from 'lucide-react'
+import { ArrowLeft, Ban, CheckCircle2, ChevronRight, Play, Printer, Trash2, X } from 'lucide-react'
 import { DeletePayrollModal } from '../components/DeletePayrollModal'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -97,12 +97,30 @@ export default function PayrollEntryPage() {
       <ErrorNote error={slips.error || run.error} />
 
       {result && (
-        <div className="mb-4 rounded border border-line bg-white px-4 py-3 text-sm">
-          <p><strong>{result.calculated}</strong> bulletin(s) calculé(s).</p>
+        <div className="mb-4 rounded border border-line bg-white text-sm">
+          <div className="flex items-center gap-3 px-4 py-3">
+            <p className="flex-1">
+              <strong>{result.calculated}</strong> bulletin(s) calculé(s)
+              {result.errors.length > 0 && <>, <strong className="text-signal">{result.errors.length}</strong> salarié(s) non calculé(s)</>}.
+            </p>
+            <button type="button" onClick={() => setResult(null)} className="rounded p-1 text-ink-muted hover:bg-paper hover:text-ink" aria-label="Fermer le compte rendu">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
           {result.errors.length > 0 && (
-            <ul className="mt-2 space-y-1 text-signal">
-              {result.errors.map((x) => <li key={x.employee_number}>{x.employee_number} {x.name} : {x.error}</li>)}
-            </ul>
+            // repliée par défaut : la liste peut être longue
+            <details className="group border-t border-line">
+              <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2 text-signal hover:bg-signal-light/50">
+                <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" aria-hidden />
+                <span className="group-open:hidden">Afficher les {result.errors.length} salarié(s) non calculé(s)</span>
+                <span className="hidden group-open:inline">Masquer la liste</span>
+              </summary>
+              <ul className="max-h-64 space-y-1 overflow-y-auto px-4 pb-3 pl-10 text-signal">
+                {result.errors.map((x) => (
+                  <li key={x.employee_number}><span className="font-medium">{x.employee_number} {x.name}</span> : {x.error}</li>
+                ))}
+              </ul>
+            </details>
           )}
         </div>
       )}

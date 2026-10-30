@@ -1,8 +1,8 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, type ReactNode } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { Spinner } from './components/ui'
-import { useAuth } from './lib/auth'
+import { useAuth, type Role } from './lib/auth'
 import LoginPage from './pages/LoginPage'
 
 // Chaque écran est chargé à la demande pour alléger le premier affichage.
@@ -21,8 +21,27 @@ const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const MySlipsPage = lazy(() => import('./pages/MySlipsPage'))
 
+/**
+ * Accès aux écrans de gestion : réservé aux rôles RH / paie (l'administrateur a tous les droits).
+ * Un salarié sans ces rôles est renvoyé vers ses propres bulletins ; la RLS protège les données
+ * dans tous les cas, ce garde évite d'afficher des écrans vides ou trompeurs.
+ */
+function RoleGuard({ roles, children }: { roles: Role[]; children: ReactNode }) {
+  const { can } = useAuth()
+  return can(...roles) ? <>{children}</> : <Navigate to="/" replace />
+}
+
+/** Accueil : tableau de bord pour la gestion, bulletins personnels pour un salarié. */
+function Home() {
+  const { can, roles } = useAuth()
+  if (!can('rh', 'paie') && roles.includes('salarie')) return <Navigate to="/mes-bulletins" replace />
+  return <DashboardPage />
+}
+
+const staff: Role[] = ['rh', 'paie']
+
 export default function App() {
-  const { session, loading } = useAuth()
+  const { session, loading, roles } = useAuth()
   if (loading) return <div className="p-10"><Spinner /></div>
   if (!session) {
     return (
@@ -35,20 +54,21 @@ export default function App() {
     <Suspense fallback={<div className="p-10"><Spinner /></div>}>
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="salaries" element={<EmployeesPage />} />
-        <Route path="salaries/:id" element={<EmployeeDetailPage />} />
+        <Route index element={<Home />} />
+        <Route path="salaries" element={<RoleGuard roles={staff}><EmployeesPage /></RoleGuard>} />
+        <Route path="salaries/:id" element={<RoleGuard roles={staff}><EmployeeDetailPage /></RoleGuard>} />
         <Route path="conges" element={<LeavesPage />} />
-        <Route path="presences" element={<AttendancePage />} />
-        <Route path="paie" element={<PayrollEntriesPage />} />
-        <Route path="paie/variables" element={<PayrollInputsPage />} />
-        <Route path="paie/simulateur" element={<SimulatorPage />} />
-        <Route path="paie/:id" element={<PayrollEntryPage />} />
-        <Route path="paie/:id/imprimer" element={<PrintSlipsPage />} />
+        <Route path="presences" element={<RoleGuard roles={staff}><AttendancePage /></RoleGuard>} />
+        <Route path="paie" element={<RoleGuard roles={staff}><PayrollEntriesPage /></RoleGuard>} />
+        <Route path="paie/variables" element={<RoleGuard roles={staff}><PayrollInputsPage /></RoleGuard>} />
+        <Route path="paie/simulateur" element={<RoleGuard roles={['paie']}><SimulatorPage /></RoleGuard>} />
+        <Route path="paie/:id" element={<RoleGuard roles={staff}><PayrollEntryPage /></RoleGuard>} />
+        <Route path="paie/:id/imprimer" element={<RoleGuard roles={staff}><PrintSlipsPage /></RoleGuard>} />
+        {/* bulletins : la RLS ne renvoie à un salarié que ses propres bulletins validés */}
         <Route path="bulletins/imprimer" element={<PrintSlipsPage />} />
         <Route path="bulletins/:id" element={<SalarySlipPage />} />
-        <Route path="etats" element={<ReportsPage />} />
-        <Route path="parametres" element={<SettingsPage />} />
+        <Route path="etats" element={<RoleGuard roles={staff}><ReportsPage /></RoleGuard>} />
+        <Route path="parametres" element={roles.length === 0 ? <SettingsPage /> : <RoleGuard roles={staff}><SettingsPage /></RoleGuard>} />
         <Route path="mes-bulletins" element={<MySlipsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

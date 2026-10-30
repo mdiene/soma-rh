@@ -36,10 +36,13 @@ export default function MySlipsPage() {
   const [employee, setEmployee] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const [grouped, setGrouped] = useState(true)
+  // regroupement par salarié : utile à la gestion ; un salarié ne voit que ses bulletins, en liste simple
+  const [groupedPref, setGrouped] = useState(true)
+  const grouped = staff && groupedPref
   const [sort, setSort] = useState<Sort>('salarie')
   const [page, setPage] = useState(0)
-  const [closed, setClosed] = useState<Set<string>>(new Set())
+  // groupes repliés par défaut : on déplie le salarié voulu (ou tout, d'un clic)
+  const [opened, setOpened] = useState<Set<string>>(new Set())
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const q = useQuery({
@@ -152,10 +155,12 @@ export default function MySlipsPage() {
                 <option value="periode-asc">Période, plus ancienne d'abord</option>
               </select>
             </label>
-            <label className="mb-2 inline-flex items-center gap-2 text-sm">
-              <input type="checkbox" className="h-4 w-4 accent-[#0F6E6A]" checked={grouped} onChange={(e) => { setGrouped(e.target.checked); reset() }} />
-              Regrouper par salarié
-            </label>
+            {staff && (
+              <label className="mb-2 inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" className="h-4 w-4 accent-[#0F6E6A]" checked={groupedPref} onChange={(e) => { setGrouped(e.target.checked); reset() }} />
+                Regrouper par salarié
+              </label>
+            )}
             <div className="ml-auto flex items-center gap-2">
               <Button size="sm" icon={<Printer className="h-3.5 w-3.5" />} disabled={selected.size === 0}
                 onClick={() => navigate(`/bulletins/imprimer?ids=${[...selected].join(',')}`)}>
@@ -165,21 +170,27 @@ export default function MySlipsPage() {
             </div>
           </div>
 
-          <p className="border-b border-line px-4 py-2 text-xs text-ink-muted">
-            {rows.length} bulletin(s){grouped && ` · ${groups.length} salarié(s)`} · net total {fcfa(rows.reduce((s, r) => s + Number(r.net_pay), 0))} F
-          </p>
+          <div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-2 text-xs text-ink-muted">
+            <p className="flex-1">{rows.length} bulletin(s){grouped && ` · ${groups.length} salarié(s)`} · net total {fcfa(rows.reduce((s, r) => s + Number(r.net_pay), 0))} F</p>
+            {grouped && groups.length > 0 && (
+              <span className="no-print flex gap-3">
+                <button type="button" className="text-river hover:underline" onClick={() => setOpened(new Set(groups.map((g) => g.id)))}>Tout déplier</button>
+                <button type="button" className="text-river hover:underline" onClick={() => setOpened(new Set())}>Tout replier</button>
+              </span>
+            )}
+          </div>
 
           {rows.length === 0 ? <p className="px-4 py-6 text-sm text-ink-muted">Aucun bulletin ne correspond aux filtres.</p> : grouped ? (
             <div className="divide-y divide-line">
               {pageGroups.map((g) => {
-                const open = !closed.has(g.id)
+                const open = opened.has(g.id) || groups.length === 1
                 const allOn = g.slips.every((s) => selected.has(s.id))
                 return (
                   <section key={g.id} aria-label={`Salarié ${g.label}`}>
                     <header className="flex flex-wrap items-center gap-x-4 gap-y-1 bg-paper px-4 py-2">
                       <input type="checkbox" className="h-4 w-4 accent-[#0F6E6A]" checked={allOn} onChange={() => toggleMany(g.slips.map((s) => s.id), !allOn)}
                         aria-label={`Sélectionner tous les bulletins de ${g.label}`} />
-                      <button type="button" aria-expanded={open} onClick={() => setClosed((c) => { const n = new Set(c); if (open) n.add(g.id); else n.delete(g.id); return n })}
+                      <button type="button" aria-expanded={open} onClick={() => setOpened((c) => { const n = new Set(c); if (open) n.delete(g.id); else n.add(g.id); return n })}
                         className="flex min-w-[16rem] flex-1 items-center gap-2 text-left font-semibold">
                         <ChevronDown className={clsx('h-4 w-4 transition-transform', !open && '-rotate-90')} aria-hidden />
                         Salarié : {g.label}
