@@ -84,7 +84,7 @@ export default function DashboardPage() {
   const d = q.data
   const p = d?.payroll
   const entry = live.find((e) => e.period_start === period)
-  const canDelete = view === 'mensuelle' && !!entry && can('paie') && (entry.status !== 'Validée' || can('admin'))
+  const canDelete = view === 'mensuelle' && !!entry && can('paie', 'rh') && (entry.status !== 'Validée' || can('admin'))
   return (
     <>
       <PageHeader

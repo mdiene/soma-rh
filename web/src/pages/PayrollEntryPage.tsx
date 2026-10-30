@@ -93,13 +93,13 @@ export default function PayrollEntryPage() {
         actions={<>
           {rows.length > 0 && <Button icon={<BookOpen className="h-4 w-4" />} onClick={() => nav(`/paie/${id}/livre`)}>Livre de paie imprimable</Button>}
           {rows.length > 0 && <Button icon={<Printer className="h-4 w-4" />} onClick={() => nav(`/paie/${id}/imprimer`)}>Imprimer les bulletins</Button>}
-          {can('paie') && editable && <Button icon={<Play className="h-4 w-4" />} loading={run.isPending} onClick={() => run.mutate()}>{rows.length ? 'Recalculer' : 'Calculer les bulletins'}</Button>}
+          {can('paie', 'rh') && editable && <Button icon={<Play className="h-4 w-4" />} loading={run.isPending} onClick={() => run.mutate()}>{rows.length ? 'Recalculer' : 'Calculer les bulletins'}</Button>}
           {can('admin') && e.status === 'Calculée' && <Button variant="primary" icon={<CheckCircle2 className="h-4 w-4" />} onClick={() => setConfirm('submit')}>Valider la paie</Button>}
           {e.status === 'Validée' && <Button icon={<Banknote className="h-4 w-4" />} onClick={() => nav(`/paie/${id}/paiements`)}>Paiements</Button>}
           {rows.length > 0 && <Button icon={<Download className="h-4 w-4" />} onClick={() => downloadPayrollSummary(id!, e.period_start)}>Synthèse (CSV)</Button>}
           {can('admin') && e.status === 'Validée' && <Button variant="ghost" icon={<RotateCcw className="h-4 w-4" />} onClick={() => setConfirm('reopen')}>Rouvrir</Button>}
           {can('admin') && e.status !== 'Annulée' && <Button variant="ghost" icon={<Ban className="h-4 w-4" />} onClick={() => setConfirm('cancel')}>Annuler</Button>}
-          {can('paie') && (e.status !== 'Validée' || can('admin')) && (
+          {can('paie', 'rh') && (e.status !== 'Validée' || can('admin')) && (
             <Button variant="ghost" className="text-signal hover:bg-signal-light hover:text-signal" icon={<Trash2 className="h-4 w-4" />} onClick={() => setConfirm('delete')}>Supprimer</Button>
           )}
         </>}

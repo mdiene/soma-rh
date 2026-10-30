@@ -19,7 +19,7 @@ export default function PayrollEntriesPage() {
       <PageHeader
         title="Traitements de paie"
         description="Un traitement par mois : calcul de tous les bulletins, contrôle, puis validation définitive."
-        actions={can('paie') && <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setOpen(true)}>Nouveau traitement</Button>}
+        actions={can('paie', 'rh') && <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setOpen(true)}>Nouveau traitement</Button>}
       />
       <ErrorNote error={entries.error} />
       {entries.isLoading ? <Spinner /> : (entries.data ?? []).length === 0 ? (

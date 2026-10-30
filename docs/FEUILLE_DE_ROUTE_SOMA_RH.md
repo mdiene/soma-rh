@@ -656,6 +656,7 @@ Cases à cocher une fois tranchées. « Défaut » = ce que je ferai si vous ne 
 
 - [x] **D1** Mono-société, `company_id` partout — *validé 30/10/2026*
 - [x] **D2** Paie prépare, RH ou DAF approuve, admin clôture — *validé 30/10/2026*
+- [x] **D2 (précision)** Le rôle « rh » prépare et calcule la paie lui-même (variables, présences, calcul, suppression d’un traitement non validé) ; paramètres, barèmes, structures et suivi des paiements restent à « paie » ; validation, clôture, réouverture et annulation restent à « admin » — *validé 30/10/2026*
 - [x] **D3** Banques BSIC et BNDE ; virements reportés. Paie actuelle par chèque ou espèces sur site (comptable), envois Wave / Orange Money — *validé 30/10/2026* (le lot 3 devra couvrir chèque/espèces/mobile money avant le virement bancaire)
 - [x] **D4** PWA d'abord, application native après stabilisation — *validé 30/10/2026*. Chiffrement des champs sensibles : reporté.
 

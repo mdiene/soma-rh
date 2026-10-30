@@ -70,7 +70,7 @@ export default function App() {
         <Route path="planning" element={<RoleGuard roles={staff}><PlanningPage /></RoleGuard>} />
         <Route path="paie" element={<RoleGuard roles={staff}><PayrollEntriesPage /></RoleGuard>} />
         <Route path="paie/variables" element={<RoleGuard roles={staff}><PayrollInputsPage /></RoleGuard>} />
-        <Route path="paie/simulateur" element={<RoleGuard roles={['paie']}><SimulatorPage /></RoleGuard>} />
+        <Route path="paie/simulateur" element={<RoleGuard roles={['paie', 'rh']}><SimulatorPage /></RoleGuard>} />
         <Route path="paie/:id" element={<RoleGuard roles={staff}><PayrollEntryPage /></RoleGuard>} />
         <Route path="paie/:id/imprimer" element={<RoleGuard roles={staff}><PrintSlipsPage /></RoleGuard>} />
         <Route path="paie/:id/paiements" element={<RoleGuard roles={staff}><PayrollPaymentsPage /></RoleGuard>} />
