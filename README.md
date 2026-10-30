@@ -122,4 +122,5 @@ exclu de Git par `.gitignore`).
 ## Documentation
 
 * [Analyse du classeur Excel](docs/ANALYSE_EXCEL.md) : feuilles, formules, barèmes, macros, validation, anomalies.
+* [Arbitrages des règles de paie](docs/ARBITRAGES_PAIE.md) : transport, IPM prestataires, indemnité de licenciement, arrondis (D10).
 * [Feuille de route](docs/FEUILLE_DE_ROUTE_SOMA_RH.md) : état réel, benchmark (Frappe HR, OrangeHRM, Odoo, Sage), angles morts, architecture cible, lots 0 à 8, décisions à valider.
