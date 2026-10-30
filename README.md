@@ -47,10 +47,11 @@ Chaque `git push` sur `main` redéploie automatiquement. Dans Claude Code, le pl
 
 | Écran | Rôle | Feuille Excel d'origine |
 |---|---|---|
-| Tableau de bord | masse salariale, effectif, alertes (congés, fins de contrat, bulletins à valider) | TDB |
-| Salariés | fiche complète, classification conventionnelle, structure salariale, solveur « net à simuler » | FICHE DE PERSONNEL |
+| Tableau de bord | vue mensuelle (masse salariale, IPRES, CSS, CFCE, TRIMF, provisions, alertes) et vue annuelle ; « Synthèse annuelle » des traitements validés | TDB |
+| Salariés | fiche complète, matricule attribué automatiquement (S0027…) et verrouillé, classification conventionnelle, structure salariale, solveur « net à simuler » | FICHE DE PERSONNEL |
 | Congés | demandes, validation, attribution et soldes | — |
-| Présences | absences, maladie, heures sup ; report automatique dans les variables de paie | — |
+| Présences | grille journalière (un salarié par ligne, enregistrement groupé sans doublon) : heures travaillées, absence, maladie, HS par taux ; report dans les variables de paie | — |
+| Mes bulletins | bulletins validés filtrés par salarié, matricule et période, regroupés par salarié ; impression et export | BULLETIN |
 | Variables du mois | saisie en grille des heures, primes et retenues | élements de salaires (colonnes de saisie) |
 | Traitements de paie | calcul par lot, contrôle, validation, impression de tous les bulletins | BULLETIN + macros VBA |
 | Bulletin | maquette fidèle, cumuls période/année, montant en lettres, impression / PDF | BULLETIN |

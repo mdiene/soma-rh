@@ -67,6 +67,8 @@ Notation : `H = 173,33` heures ; *situation* = « TRAVAIL » si contrat CDI ou C
 | **NET A PAYER (CS = CT)** | rémunération nette + indemnités + retenues (saisies en négatif) + appoint M-1 |
 | Masse salariale (CY) | brut + charges patronales + indemnités + appoints |
 | Provision congé (DD) | brut ÷ 12 si « congé à payer » = NON |
+| Provision précarité du mois (ajout SOMA-RH) | CDD/COD en cours : (salaire fixe + prime d'ancienneté + Tabaski) × 7 % ; 0 le mois de sortie, où l'indemnité AZ est payée dans le brut. N'entre ni dans le brut ni dans le net. Le classeur prévoit la colonne « cumul provision précarité » (DC) sans formule. |
+| Cumuls (CZ, DA, DB, DC, DE — vides dans le classeur) | du 1er janvier au mois affiché, bulletins validés uniquement ; IPRES = parts salariale + patronale |
 
 ## 3. Validation du moteur SOMA-RH
 
