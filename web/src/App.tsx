@@ -21,6 +21,7 @@ const JournalPage = lazy(() => import('./pages/JournalPage'))
 const PlanningPage = lazy(() => import('./pages/PlanningPage'))
 const MySpacePage = lazy(() => import('./pages/MySpacePage'))
 const RequestsPage = lazy(() => import('./pages/RequestsPage'))
+const PayrollPaymentsPage = lazy(() => import('./pages/PayrollPaymentsPage'))
 const SimulatorPage = lazy(() => import('./pages/SimulatorPage'))
 const ReportsPage = lazy(() => import('./pages/ReportsPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
@@ -70,6 +71,7 @@ export default function App() {
         <Route path="paie/simulateur" element={<RoleGuard roles={['paie']}><SimulatorPage /></RoleGuard>} />
         <Route path="paie/:id" element={<RoleGuard roles={staff}><PayrollEntryPage /></RoleGuard>} />
         <Route path="paie/:id/imprimer" element={<RoleGuard roles={staff}><PrintSlipsPage /></RoleGuard>} />
+        <Route path="paie/:id/paiements" element={<RoleGuard roles={staff}><PayrollPaymentsPage /></RoleGuard>} />
         <Route path="paie/:id/livre" element={<RoleGuard roles={staff}><PayrollBookPrintPage /></RoleGuard>} />
         {/* bulletins : la RLS ne renvoie à un salarié que ses propres bulletins validés */}
         <Route path="bulletins/imprimer" element={<PrintSlipsPage />} />

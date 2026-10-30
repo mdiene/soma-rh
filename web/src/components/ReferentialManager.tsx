@@ -286,7 +286,7 @@ const TABLE_LABEL: Record<string, string> = {
   salary_structure_assignments: 'Affectation de structure', payroll_inputs: 'Variables du mois',
   additional_salaries: 'Salaire additionnel', attendance: 'Présence', leave_applications: 'Congé',
   salary_slips: 'Bulletin', payroll_entries: 'Traitement de paie', payroll_settings: 'Paramètre de paie',
-  user_roles: 'Rôle utilisateur',
+  user_roles: 'Rôle utilisateur', salary_payments: 'Paiement de salaire', employee_requests: 'Demande de salarié',
 }
 const HIDDEN = new Set(['updated_at', 'updated_by', 'created_at', 'id'])
 

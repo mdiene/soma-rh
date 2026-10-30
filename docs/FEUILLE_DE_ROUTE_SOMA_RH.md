@@ -89,6 +89,8 @@ Quatre décisions bloquent le démarrage ; les autres sont en §10.
 | Lien WhatsApp prérempli (congés) | Fait |
 | PAY-006 réouverture motivée (admin), PAY-008 comparaison avec le mois précédent, fichier de synthèse du journal de paie (D8) | Fait |
 | PAY-001/002 périodes et checklist complètes, PAY-007 régularisation, PAY-009 règles versionnées, PAY-010 points Excel | À faire (PAY-010 : fait, voir `docs/ARBITRAGES_PAIE.md`) |
+| D10 arbitrages des règles Excel + réglages dans Paramètres | Fait (docs/ARBITRAGES_PAIE.md) |
+| Lot 3 réduit : suivi du paiement (espèces / chèque / mobile money), états de paiement imprimables par mode | Première version faite ; synthèse CSV du journal faite ; pas de format bancaire ni de transmission (D3, D8) |
 | TPS-002 postes et rotations (gardiens) | Première version : planning mensuel + génération de cycle |
 | ESS-001/002/006 portail salarié (Mon espace : dernier bulletin, soldes, planning, demandes d'attestation / acompte / correction de présence / données personnelles) et traitement RH | Première version faite ; notifications e-mail Gmail et délégation d'approbation à venir |
 
