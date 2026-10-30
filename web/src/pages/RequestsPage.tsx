@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { Check, MessageCircle, X } from 'lucide-react'
+import { Check, FileText, MessageCircle, X } from 'lucide-react'
 import { useState } from 'react'
 import { supabase, unwrap } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { date, fcfa } from '../lib/format'
 import { whatsappLink } from '../lib/whatsapp'
 import { Badge, Button, ErrorNote, Modal, PageHeader, SelectField, Spinner, TextField } from '../components/ui'
+import { AttestationModal, type AttestationKind } from '../components/AttestationModal'
 import { REQUEST_TYPES, type EmployeeRequest } from '../lib/requests'
 
 const db = supabase as unknown as SupabaseClient
@@ -18,6 +19,7 @@ export default function RequestsPage() {
   const [status, setStatus] = useState('Ouverte')
   const [target, setTarget] = useState<{ r: EmployeeRequest; decision: 'Approuvée' | 'Rejetée' } | null>(null)
   const [note, setNote] = useState('')
+  const [att, setAtt] = useState<{ employeeId: string; kind: AttestationKind } | null>(null)
 
   const q = useQuery({
     queryKey: ['employee_requests', status],
@@ -73,12 +75,16 @@ export default function RequestsPage() {
                     <Button size="sm" variant="ghost" icon={<X className="h-4 w-4" />} onClick={() => { setNote(''); setTarget({ r, decision: 'Rejetée' }) }}>Rejeter</Button>
                   </>
                 )}
+                {r.status === 'Approuvée' && (r.request_type === 'attestation_travail' || r.request_type === 'attestation_salaire') && (
+                  <Button size="sm" icon={<FileText className="h-4 w-4" />} onClick={() => setAtt({ employeeId: r.employee_id, kind: r.request_type as AttestationKind })}>Attestation</Button>
+                )}
                 {wa && <a className="inline-flex items-center gap-1 rounded px-2.5 py-1.5 text-xs font-medium text-ink-soft hover:bg-paper hover:text-ink" href={wa} target="_blank" rel="noreferrer"><MessageCircle className="h-4 w-4" />WhatsApp</a>}
               </li>
             )
           })}
         </ul>
       )}
+      <AttestationModal employeeId={att?.employeeId ?? null} kind={att?.kind ?? 'attestation_travail'} onClose={() => setAtt(null)} />
       <Modal open={!!target} onClose={() => setTarget(null)} title={target?.decision === 'Approuvée' ? 'Approuver la demande' : 'Rejeter la demande'}
         footer={<><Button variant="ghost" onClick={() => setTarget(null)}>Revenir</Button>
           <Button variant={target?.decision === 'Rejetée' ? 'danger' : 'primary'} loading={decide.isPending} onClick={() => decide.mutate()}>Confirmer</Button></>}>
