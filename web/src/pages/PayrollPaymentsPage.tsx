@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { ArrowLeft, CheckCircle2, Printer } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Download, Printer } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase, unwrap } from '../lib/supabase'
@@ -62,6 +62,18 @@ export default function PayrollPaymentsPage() {
     onSuccess: () => { setOpen(false); setSel(new Set()); qc.invalidateQueries({ queryKey: ['pay_status'] }) },
   })
 
+  const exportCsv = (m: string) => {
+    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
+    const lines = rows.filter((r) => r.mode === m).map((r) => [r.employee_number, r.employee_name,
+      r.employee?.phone_personal || r.employee?.phone_work || '', Math.round(Number(r.net_pay)), r.pay?.status ?? 'À payer', r.pay?.paid_at ?? '', r.pay?.reference ?? ''].map(esc).join(';'))
+    const head = ['Matricule', 'Salarié', 'Téléphone', 'Net à payer (F)', 'État', 'Payé le', 'Référence'].map(esc).join(';')
+    const blob = new Blob(['\ufeff' + [head, ...lines].join('\r\n')], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `paiements-${m.replace(/\s+/g, '-')}-${e!.period_start.slice(0, 7)}.csv`; a.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (entry.isLoading || slips.isLoading) return <Spinner />
   const e = entry.data
   if (!e) return <ErrorNote error={entry.error ?? 'Traitement introuvable'} />
@@ -77,6 +89,7 @@ export default function PayrollPaymentsPage() {
         description="Suivi du paiement par le comptable : espèces, chèque ou mobile money. Seuls les bulletins validés apparaissent."
         actions={<>
           {modes.map((m) => <Button key={m} icon={<Printer className="h-4 w-4" />} onClick={() => { setPrintMode(m); setTimeout(printPortal, 50) }}>État {m}</Button>)}
+          {modes.map((m) => <Button key={`c${m}`} variant="ghost" icon={<Download className="h-4 w-4" />} onClick={() => exportCsv(m)}>CSV {m}</Button>)}
         </>} />
       <ErrorNote error={slips.error || pays.error || mark.error} />
       {e.status !== 'Validée' && <p className="panel mb-4 px-4 py-3 text-sm text-ink-soft">Ce traitement n’est pas encore validé : les bulletins ne sont payables qu’après validation par l’administrateur.</p>}

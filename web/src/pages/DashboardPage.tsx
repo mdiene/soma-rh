@@ -56,6 +56,13 @@ export default function DashboardPage() {
     setParams(p, { replace: true })
   }
 
+  const reqPending = useQuery({
+    queryKey: ['employee_requests_pending'], enabled: can('rh'),
+    queryFn: async () => {
+      const { count } = await (supabase as unknown as import('@supabase/supabase-js').SupabaseClient).from('employee_requests').select('id', { count: 'exact', head: true }).eq('status', 'Ouverte')
+      return count ?? 0
+    },
+  })
   const q = useQuery({
     queryKey: ['dashboard', period],
     enabled: !!period && view === 'mensuelle',
@@ -134,6 +141,7 @@ export default function DashboardPage() {
 
             <Section title="À traiter" className="lg:col-span-1">
               <ul className="divide-y divide-line text-sm">
+                {can('rh') && <Todo n={reqPending.data ?? 0} label="demande(s) de salariés à traiter (attestations, acomptes…)" to="/demandes" />}
                 <Todo n={d.leave_requests_pending} label="demande(s) de congé en attente" to="/conges" />
                 <Todo n={d.leaves_in_progress} label="salarié(s) en congé aujourd'hui" to="/conges" />
                 <Todo n={d.contracts_ending_60d} label="contrat(s) arrivant à échéance sous 60 jours" to="/salaries" />
