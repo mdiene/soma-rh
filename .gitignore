@@ -13,3 +13,8 @@ _archive/
 supabase/seed/
 *.xlsx
 *.xlsm
+.env
+.migration-data.sql
+.migration-data.dump
+# Sauvegardes locales pouvant contenir des données personnelles
+backups/

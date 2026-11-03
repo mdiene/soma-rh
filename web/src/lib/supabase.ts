@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './database.types'
 
-const url = import.meta.env.VITE_SUPABASE_URL as string
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
+const url = import.meta.env.VITE_API_URL as string
+const key = import.meta.env.VITE_API_PUBLIC_KEY as string
 
 if (!url || !key) {
-  throw new Error('Configuration manquante : renseignez VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY dans web/.env.local')
+  throw new Error('Configuration manquante : renseignez VITE_API_URL et VITE_API_PUBLIC_KEY dans web/.env.local')
 }
 
 export const supabase = createClient<Database>(url, key, {
