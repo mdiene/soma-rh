@@ -70,13 +70,14 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
     onSuccess: () => { refresh(); onClose() },
   })
 
-  // Une demande approuvée repasse d'abord « Ouverte » (en traitement) : elle peut ensuite être supprimée.
-  const reopen = useMutation({
-    mutationFn: async () => unwrap(await supabase.from('leave_applications').update({ status: 'Ouverte', approver_id: null, approved_at: null }).eq('id', app!.id).select()),
-    onSuccess: refresh,
-  })
+  // Une demande approuvée repasse d'abord « Ouverte » (en traitement), puis est supprimée.
   const remove = useMutation({
-    mutationFn: async () => unwrap(await supabase.from('leave_applications').delete().eq('id', app!.id).select()),
+    mutationFn: async () => {
+      if (app!.status === 'Approuvée') {
+        unwrap(await supabase.from('leave_applications').update({ status: 'Ouverte', approver_id: null, approved_at: null }).eq('id', app!.id).select())
+      }
+      return unwrap(await supabase.from('leave_applications').delete().eq('id', app!.id).select())
+    },
     onSuccess: () => { refresh(); onClose() },
   })
 
@@ -105,12 +106,9 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
                 <Button variant="ghost" icon={<X className="h-4 w-4" />} onClick={() => decide.mutate('Rejetée')}>Rejeter</Button>
               </>
             )}
-            {isHr && app.status === 'Approuvée' && (
-              <Button variant="ghost" loading={reopen.isPending} onClick={() => reopen.mutate()}>Repasser en traitement</Button>
-            )}
-            {isHr && app.status !== 'Approuvée' && (
+            {isHr && (
               <Button variant="ghost" icon={<Trash2 className="h-4 w-4" />} loading={remove.isPending}
-                onClick={() => { if (window.confirm('Supprimer définitivement cette demande de congé ?')) remove.mutate() }}>Supprimer</Button>
+                onClick={() => { if (window.confirm(`Supprimer définitivement cette demande de congé${approved ? ' (approuvée : elle repasse d’abord en traitement)' : ''} ?`)) remove.mutate() }}>Supprimer</Button>
             )}
             {isHr && app.status !== 'Ouverte' && app.status !== 'Annulée' && (() => {
               const txt = app.status === 'Approuvée'
@@ -166,7 +164,7 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
             {app.approved_at && (<><dt className="text-ink-soft">Décision</dt><dd>{app.status} le {date(app.approved_at.slice(0, 10))}</dd></>)}
           </dl>
         )}
-        <div className="mt-3"><ErrorNote error={save.error || decide.error || reopen.error || remove.error} /></div>
+        <div className="mt-3"><ErrorNote error={save.error || decide.error || remove.error} /></div>
       </Modal>
 
       {/* Bon remis à l'employé : seul contenu imprimé */}
