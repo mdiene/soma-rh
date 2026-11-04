@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Pencil, Printer, X } from 'lucide-react'
+import { Check, Pencil, Printer, Trash2, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase, unwrap, type Tables } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -60,6 +60,16 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
     onSuccess: () => { refresh(); onClose() },
   })
 
+  // Une demande approuvée repasse d'abord « Ouverte » (en traitement) : elle peut ensuite être supprimée.
+  const reopen = useMutation({
+    mutationFn: async () => unwrap(await supabase.from('leave_applications').update({ status: 'Ouverte', approver_id: null, approved_at: null }).eq('id', app!.id).select()),
+    onSuccess: refresh,
+  })
+  const remove = useMutation({
+    mutationFn: async () => unwrap(await supabase.from('leave_applications').delete().eq('id', app!.id).select()),
+    onSuccess: () => { refresh(); onClose() },
+  })
+
   if (!app) return null
   const isHr = can('rh')
   const canEdit = isHr || (app.employee_id === me.data && app.status === 'Ouverte')
@@ -84,6 +94,13 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
                 <Button icon={<Check className="h-4 w-4" />} loading={decide.isPending} onClick={() => decide.mutate('Approuvée')}>Approuver</Button>
                 <Button variant="ghost" icon={<X className="h-4 w-4" />} onClick={() => decide.mutate('Rejetée')}>Rejeter</Button>
               </>
+            )}
+            {isHr && app.status === 'Approuvée' && (
+              <Button variant="ghost" loading={reopen.isPending} onClick={() => reopen.mutate()}>Repasser en traitement</Button>
+            )}
+            {isHr && app.status !== 'Approuvée' && (
+              <Button variant="ghost" icon={<Trash2 className="h-4 w-4" />} loading={remove.isPending}
+                onClick={() => { if (window.confirm('Supprimer définitivement cette demande de congé ?')) remove.mutate() }}>Supprimer</Button>
             )}
             {canEdit && <Button variant="ghost" icon={<Pencil className="h-4 w-4" />} onClick={() => setEditing(true)}>Modifier</Button>}
             {app.status !== 'Rejetée' && app.status !== 'Annulée' && (
@@ -130,7 +147,7 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
             {app.approved_at && (<><dt className="text-ink-soft">Décision</dt><dd>{app.status} le {date(app.approved_at.slice(0, 10))}</dd></>)}
           </dl>
         )}
-        <div className="mt-3"><ErrorNote error={save.error || decide.error} /></div>
+        <div className="mt-3"><ErrorNote error={save.error || decide.error || reopen.error || remove.error} /></div>
       </Modal>
 
       {/* Bon remis à l'employé : seul contenu imprimé */}
