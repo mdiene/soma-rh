@@ -55,8 +55,8 @@ function display(v: unknown, kind?: Kind): string {
   }
 }
 
-/** Colonnes maximum par page imprimée (A4 paysage, corps 8,5 px). */
-const PRINT_MAX_COLS = 15
+/** Colonnes maximum par page imprimée (A4 paysage, corps 9,5 px). */
+const PRINT_MAX_COLS = 13
 
 /** Découpe les blocs en bandes imprimables ; le premier bloc (identification) est répété. */
 function printBands<T>(blocks: GBlock<T>[]): GBlock<T>[][] {

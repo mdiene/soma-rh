@@ -2,8 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import clsx from 'clsx'
 import { useEffect, useMemo, useState } from 'react'
 import { supabase, unwrap, type Views } from '../lib/supabase'
-import { usePayrollEntries } from '../lib/queries'
-import { fcfa, monthLabel } from '../lib/format'
+import { useCompany, usePayrollEntries } from '../lib/queries'
+import { date, fcfa, monthLabel } from '../lib/format'
 import { GroupedTable, type Check, type GBlock, type GCol } from '../components/GroupedTable'
 import { Empty, ErrorNote, PageHeader, SelectField, Spinner } from '../components/ui'
 
@@ -144,6 +144,7 @@ function payrollChecks(reg: Reg[], contrib: Contrib[] | undefined): Check[] {
 
 export default function ReportsPage() {
   const entries = usePayrollEntries()
+  const company = useCompany()
   const [entryId, setEntryId] = useState('')
   const [tab, setTab] = useState<Tab>('livre')
   const [byStatus, setByStatus] = useState(false)
@@ -212,7 +213,22 @@ export default function ReportsPage() {
       {!entryId ? <Empty title="Aucun traitement de paie">Les états apparaissent dès qu'un traitement est calculé.</Empty> : (
         <div className="print-landscape">
           {/* titre imprimé (la barre d'onglets n'est pas imprimée) */}
-          <h2 className="mb-2 hidden text-lg print:block">{TABS.find((t) => t.id === tab)?.label} — {entry ? monthLabel(entry.period_start) : ''}</h2>
+          <header className="mb-3 hidden items-end justify-between border-b-[3px] border-river pb-2 print:flex">
+            <div>
+              <p className="text-[8.5px] font-semibold uppercase tracking-[0.14em] text-ink-muted">Société</p>
+              <p className="text-[13px] font-bold leading-tight">{company.data?.name ?? ''}</p>
+              {company.data?.ninea && <p className="text-[8.5px] text-ink-muted">NINEA {company.data.ninea}</p>}
+            </div>
+            <div className="text-center">
+              <p className="text-[17px] font-bold uppercase tracking-[0.16em] text-river-dark">{TABS.find((t) => t.id === tab)?.label}</p>
+              {entry && <p className="text-[10px] font-semibold">Période du {date(entry.period_start)} au {date(entry.period_end)}</p>}
+            </div>
+            <div className="text-right text-[8.5px] leading-snug text-ink-muted">
+              <p>Édité le {date(new Date().toISOString().slice(0, 10))}</p>
+              {entry && <p className="font-semibold text-ink">{entry.status === 'Validée' ? 'Paie validée' : `Traitement ${entry.status.toLowerCase()} — provisoire`}</p>}
+              <p>Montants en F CFA</p>
+            </div>
+          </header>
           {tab === 'livre' && (reg.isLoading ? <Spinner /> : (
             <GroupedTable rows={regRows} blocks={registerBlocks} rowKey={(r) => r.salary_slip_id ?? r.employee_number ?? ''}
               groupBy={statusGroup} toolbar={groupToggle} checks={checks} exportName={`livre-de-paie-${suffix}`}
