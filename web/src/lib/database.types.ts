@@ -856,46 +856,79 @@ export type Database = {
       }
       payroll_entries: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
+          closed_at: string | null
+          closed_by: string | null
           company_id: string
           created_at: string
           created_by: string | null
           id: string
+          paid_at: string | null
+          paid_by: string | null
           notes: string | null
           payment_mode: string
           period_end: string
           period_start: string
+          period_id: string | null
           posting_date: string
+          reopen_reason: string | null
+          reopened_at: string | null
+          reopened_by: string | null
           status: string
+          settings_snapshot: Json | null
           submitted_at: string | null
           submitted_by: string | null
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           company_id: string
           created_at?: string
           created_by?: string | null
           id?: string
+          paid_at?: string | null
+          paid_by?: string | null
           notes?: string | null
           payment_mode?: string
           period_end: string
           period_start: string
+          period_id?: string | null
           posting_date?: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
           status?: string
+          settings_snapshot?: Json | null
           submitted_at?: string | null
           submitted_by?: string | null
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           company_id?: string
           created_at?: string
           created_by?: string | null
           id?: string
+          paid_at?: string | null
+          paid_by?: string | null
           notes?: string | null
           payment_mode?: string
           period_end?: string
           period_start?: string
+          period_id?: string | null
           posting_date?: string
+          reopen_reason?: string | null
+          reopened_at?: string | null
+          reopened_by?: string | null
           status?: string
+          settings_snapshot?: Json | null
           submitted_at?: string | null
           submitted_by?: string | null
           updated_at?: string
@@ -909,6 +942,195 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      payroll_periods: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          locked_at: string | null
+          locked_by: string | null
+          period_end: string
+          period_start: string
+          reopened_at: string | null
+          reopened_by: string | null
+          reopen_reason: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          period_end: string
+          period_start: string
+          reopened_at?: string | null
+          reopened_by?: string | null
+          reopen_reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          period_end?: string
+          period_start?: string
+          reopened_at?: string | null
+          reopened_by?: string | null
+          reopen_reason?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      payroll_anomalies: {
+        Row: {
+          code: string
+          created_at: string
+          employee_id: string | null
+          id: string
+          message: string
+          payroll_entry_id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          message: string
+          payroll_entry_id: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          status?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          employee_id?: string | null
+          id?: string
+          message?: string
+          payroll_entry_id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      payroll_approvals: {
+        Row: {
+          actor_id: string
+          comment: string | null
+          created_at: string
+          decision: string
+          id: string
+          payroll_entry_id: string
+          role: string
+        }
+        Insert: {
+          actor_id?: string
+          comment?: string | null
+          created_at?: string
+          decision: string
+          id?: string
+          payroll_entry_id: string
+          role: string
+        }
+        Update: {
+          actor_id?: string
+          comment?: string | null
+          created_at?: string
+          decision?: string
+          id?: string
+          payroll_entry_id?: string
+          role?: string
+        }
+        Relationships: []
+      }
+      payroll_snapshots: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          payload: Json
+          payload_hash: string
+          payroll_entry_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payload: Json
+          payload_hash: string
+          payroll_entry_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payload?: Json
+          payload_hash?: string
+          payroll_entry_id?: string
+        }
+        Relationships: []
+      }
+      audit_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          after_data: Json | null
+          before_data: Json | null
+          created_at: string
+          id: string
+          payroll_entry_id: string | null
+          reason: string | null
+          resource_id: string | null
+          resource_type: string
+          result: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          id?: string
+          payroll_entry_id?: string | null
+          reason?: string | null
+          resource_id?: string | null
+          resource_type: string
+          result?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          after_data?: Json | null
+          before_data?: Json | null
+          created_at?: string
+          id?: string
+          payroll_entry_id?: string | null
+          reason?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          result?: string
+        }
+        Relationships: []
       }
       payroll_inputs: {
         Row: {
@@ -989,11 +1211,14 @@ export type Database = {
         Row: {
           brs_rate: number
           cfce_rate: number
+          allowance_absence_basis: string
           created_at: string
           css_af_rate: number
           css_at_rate: number
           css_ceiling: number
           effective_from: string
+          ipm_on_contractors: boolean
+          severance_basis: string
           hourly_rate_divisor: number
           id: string
           ipm_ceiling: number
@@ -1018,6 +1243,7 @@ export type Database = {
         Insert: {
           brs_rate?: number
           cfce_rate?: number
+          allowance_absence_basis?: string
           created_at?: string
           css_af_rate?: number
           css_at_rate?: number
@@ -1047,11 +1273,14 @@ export type Database = {
         Update: {
           brs_rate?: number
           cfce_rate?: number
+          allowance_absence_basis?: string
           created_at?: string
           css_af_rate?: number
           css_at_rate?: number
           css_ceiling?: number
           effective_from?: string
+          ipm_on_contractors?: boolean
+          severance_basis?: string
           hourly_rate_divisor?: number
           id?: string
           ipm_ceiling?: number
@@ -1791,7 +2020,7 @@ export type Database = {
           email: string
           employee_id: string
           employee_number: string
-          last_sign_in_at: string
+          last_sign_in_at: string | null
           roles: string[]
           user_id: string
         }[]
@@ -1809,6 +2038,7 @@ export type Database = {
         Args: { p_payroll_entry_id: string }
         Returns: undefined
       }
+      payroll_entry_checks: { Args: { p_payroll_entry_id: string }; Returns: Json }
       claim_first_admin: { Args: never; Returns: boolean }
       compute_income_tax: {
         Args: { p_date: string; p_monthly_gross: number; p_parts: number }
@@ -1830,6 +2060,14 @@ export type Database = {
       delete_payroll_entry: {
         Args: { p_payroll_entry_id: string }
         Returns: number
+      }
+      create_payroll_snapshot: {
+        Args: { p_payroll_entry_id: string }
+        Returns: string
+      }
+      transition_payroll_entry: {
+        Args: { p_payroll_entry_id: string; p_target_status: string; p_reason?: string | null }
+        Returns: string
       }
       excel_datedif: {
         Args: { p_end: string; p_start: string; p_unit: string }

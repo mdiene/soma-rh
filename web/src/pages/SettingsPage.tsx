@@ -183,6 +183,28 @@ function PayrollSettingsTab() {
             onChange={(e) => setF({ ...f, [s.key]: Number(e.target.value) })} />
         ))}
       </fieldset>
+      <h3 className="mb-1 mt-6 text-sm font-semibold">Règles de calcul</h3>
+      <p className="mb-3 max-w-prose text-xs text-ink-muted">Arbitrages D10 (voir docs/ARBITRAGES_PAIE.md). La valeur « Excel » rétablit l'ancien calcul du classeur.</p>
+      <fieldset disabled={!can('paie')} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <SelectField label="Transport et km en cas d'absence" value={f.allowance_absence_basis ?? 'hours'}
+          hint="Heures : l'indemnité baisse au prorata des heures d'absence."
+          onChange={(e) => setF({ ...f, allowance_absence_basis: e.target.value })}>
+          <option value="hours">Au prorata des heures d'absence</option>
+          <option value="excel">Comme le classeur Excel (heures ÷ 8)</option>
+        </SelectField>
+        <SelectField label="IPM des prestataires" value={f.ipm_on_contractors ? 'oui' : 'non'}
+          hint="Non : les prestataires ne cotisent pas à l'IPM."
+          onChange={(e) => setF({ ...f, ipm_on_contractors: e.target.value === 'oui' })}>
+          <option value="non">Pas d'IPM</option>
+          <option value="oui">IPM appliquée (comme le classeur)</option>
+        </SelectField>
+        <SelectField label="Base de l'indemnité de licenciement / retraite" value={f.severance_basis ?? 'average12'}
+          hint="Moyenne : mois de sortie et 11 mois validés précédents."
+          onChange={(e) => setF({ ...f, severance_basis: e.target.value })}>
+          <option value="average12">Moyenne des 12 derniers mois</option>
+          <option value="month">Salaire du mois de sortie (classeur)</option>
+        </SelectField>
+      </fieldset>
       <div className="mt-3"><ErrorNote error={q.error || save.error} /></div>
     </Section>
   )

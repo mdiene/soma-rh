@@ -95,11 +95,11 @@ Le moteur SOMA-RH reproduit le **tableau de calcul** (source du brut et du net).
 1. **Indemnité maladie** (C) : le TABLEAU ignore la colonne « taux maladie » (Z), alors que le BULLETIN l'applique et ajoute la prime d'ancienneté à la base. Le contrôle BULLETIN!L6 signale alors un écart. SOMA-RH applique le taux (100 % par défaut) sur la base du TABLEAU.
 2. **Retenue absences** (R) : base du TABLEAU = base + sursalaire + honoraires + autre fixe ; le BULLETIN n'affiche que base + sursalaire.
 3. **Masse salariale** (C) : la plage `CF2:CK2` inclut par erreur la retenue « avance Korité ». SOMA-RH n'additionne que les indemnités (aucun impact en août : retenue nulle).
-4. **Transport et indemnité km** (R) : on retire « heures d'absence ÷ 8 » (des jours) de 173,33 (des heures). Probablement une confusion jours/heures ; à valider avec la direction avant correction.
+4. **Transport et indemnité km** (C, D10 : voir ARBITRAGES_PAIE.md ; ancien calcul = R) : on retire « heures d'absence ÷ 8 » (des jours) de 173,33 (des heures). Probablement une confusion jours/heures ; à valider avec la direction avant correction.
 5. **Réduction IR au-delà de 5 parts** (C) : la formule rend 0 si les parts dépassent 5. SOMA-RH plafonne à 5 parts (règle fiscale).
 6. **Appoint du mois** (R) : toujours nul (CR = CS − CT et CS = CT). Aucun arrondi n'est appliqué au net ; les montants sont affichés au franc près.
-7. **IPM** (R) : cotisation appliquée à tous les contrats, prestataires compris.
-8. **Indemnité de licenciement** (R) : calculée sur le salaire du mois et non sur la moyenne des 12 derniers mois prévue par le Code du travail ; à faire valider.
+7. **IPM** (C, D10 : exclue pour les prestataires) : cotisation appliquée à tous les contrats, prestataires compris.
+8. **Indemnité de licenciement** (C, D10 : moyenne des 12 derniers mois) : calculée sur le salaire du mois et non sur la moyenne des 12 derniers mois prévue par le Code du travail ; à faire valider.
 9. **Feuilles d'états** : les en-têtes « Période du … » affichent `#VALEUR!` (format `"dd/mm/yyy"` erroné).
 10. **Matricule S0026** : présent dans la fiche de personnel mais absent du TABLEAU (pas de paie en août). SOMA-RH le signale lors du calcul (« aucune structure salariale affectée »).
 11. **Données personnelles** : CNI, téléphones et filiations figurent en clair. Dans SOMA-RH, elles sont protégées par la RLS (rôles RH/paie uniquement ; chaque salarié ne voit que sa fiche).

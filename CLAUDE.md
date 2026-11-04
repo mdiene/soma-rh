@@ -5,10 +5,10 @@ Application RH et paie de la Société Minière Africaine (Sénégal). Interface
 ## Structure
 - `web/` : React 18 + Vite + TypeScript + Tailwind + TanStack Query/Table. Pages dans `web/src/pages`, composants partagés dans `web/src/components`.
 - `supabase/migrations/` : schéma, RLS, moteur de paie PL/pgSQL, vues d'états. Projet Supabase `mzhdwdpesbggxtjxxgab`.
-- `docs/ANALYSE_EXCEL.md` : règles de paie issues du classeur Excel (référence fonctionnelle).
+- `docs/` : documentation du projet (Mintlify, `docs/docs.json`), rapports de tests (`docs/qa/`), cas d'usage et registre des règles légales. `docs/ANALYSE_EXCEL.md` est **historique** : le classeur Excel n'est plus une référence.
 
 ## Règles
-- Le moteur de paie (`compute_salary_slip`) doit rester identique au classeur Excel : après toute modification, recalculer août 2026 et comparer (écart attendu < 0,000001 F sur les 25 bulletins ; brut total 4 929 179,09 ; net total 4 662 739,89).
+- Base légale de la paie : **Code du travail du Sénégal** (loi 97-17), conventions collectives applicables, Code général des impôts, règles IPRES et CSS. Le moteur de paie (`compute_salary_slip`) doit être conforme au registre des règles légales (`docs/regles-de-paie/registre-legal.md`, article et source pour chaque règle) ; toute modification passe les tests de l'oracle indépendant et les tests de référence. En cas de conflit entre sources, la règle la plus favorable au salarié s'applique. En cas de doute sur un texte : noter « à confirmer », ne rien inventer.
 - Toujours passer par une migration (`supabase/migrations/AAAAMMJJHHMMSS_nom.sql`) puis l'appliquer via le MCP Supabase ; régénérer `web/src/lib/database.types.ts` ensuite.
 - Toute nouvelle table : RLS activée + politiques par rôle (`has_role(array['rh'|'paie'])`), index sur les clés étrangères.
 - Montants en pleine précision (`numeric`) en base ; arrondi uniquement à l'affichage (`fcfa()` de `web/src/lib/format.ts`).
@@ -20,7 +20,7 @@ Application RH et paie de la Société Minière Africaine (Sénégal). Interface
 - `frontend-design`, `ui-ux-pro-max`, `ui-styling`, `web-design-guidelines` : interface.
 - `vercel-react-best-practices`, `vercel-composition-patterns` : code React.
 - `graphify` : carte du code (`/graphify .`, résultat dans `graphify-out/`).
-- `xlsx` : lecture des classeurs Excel de paie.
+- `xlsx` : import et export de fichiers tableur.
 
 ## graphify
 

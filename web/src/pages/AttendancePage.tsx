@@ -387,7 +387,7 @@ function MonthSummary({ period }: { period: string }) {
 
   return (
     <Section className="mt-6" title={`Cumul de ${monthLabel(period)}`}
-      actions={can('paie') && (
+      actions={can('paie', 'rh') && (
         <Button size="sm" icon={<ArrowRightLeft className="h-3.5 w-3.5" />} loading={sync.isPending} onClick={() => sync.mutate()}>
           Reporter dans les variables de paie
         </Button>

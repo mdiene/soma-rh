@@ -134,7 +134,7 @@ export default function PayrollInputsPage() {
     setDirty((d) => new Set(d).add(id))
   }
 
-  const readOnly = !can('paie')
+  const readOnly = !can('paie', 'rh')
   const loading = data.isLoading || employees.isLoading || components.isLoading || attendance.isLoading
 
   return (

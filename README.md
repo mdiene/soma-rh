@@ -5,7 +5,7 @@ classeur Excel « GESTION DE LA PAIE DES CONGES » et sur le modèle fonctionnel
 [Frappe HR](https://github.com/frappe/hrms).
 
 * **Frontend** : React 18 + Vite + TypeScript + Tailwind CSS + TanStack Query / Table + Lucide (`web/`)
-* **Backend** : Supabase (PostgreSQL 17, Auth, RLS) — projet `mzhdwdpesbggxtjxxgab` (`supabase/`)
+* **Backend cible** : PostgreSQL 17 + PostgREST + authentification JWT (`supabase/`, `postgres/`, `docker-compose.yml`)
 * **Moteur de paie** : fonctions PL/pgSQL qui reproduisent les formules Excel au centime près
   (25 bulletins d'août 2026 identiques, voir [docs/ANALYSE_EXCEL.md](docs/ANALYSE_EXCEL.md))
 
@@ -17,12 +17,35 @@ npm install
 npm run dev                    # http://localhost:5173
 ```
 
-`web/.env.local` contient déjà l'URL du projet et sa clé publique (publishable key). Modèle : `web/.env.example`.
+Pour démarrer la nouvelle base locale :
 
-1. Ouvrez l'application, cliquez sur **Créer un compte** (adresse e-mail + mot de passe).
-   Si la confirmation par e-mail est activée dans Supabase (Authentication › Providers › Email), validez le lien reçu.
-2. Connectez-vous, allez dans **Paramètres › Accès** et cliquez sur **Me déclarer administrateur**
-   (possible uniquement tant qu'aucun administrateur n'existe).
+```powershell
+Copy-Item .env.docker.example .env
+docker compose up -d postgres postgrest api
+```
+
+Services locaux : frontend `http://localhost:5173`, passerelle/API `http://localhost:8000`,
+PostgREST direct `http://localhost:3001`, PostgreSQL `localhost:5432`, pgAdmin `http://localhost:5051`.
+
+pgAdmin est préconfiguré avec le serveur **SOMA-RH local**. Depuis pgAdmin, utilisez `postgres`
+comme hôte, `5432` comme port, `soma_rh` comme base, `soma` comme utilisateur et la valeur
+`POSTGRES_PASSWORD` du fichier `.env` comme mot de passe. Depuis Windows, n’utilisez pas `localhost`
+dans pgAdmin lancé dans Docker : les conteneurs communiquent via le nom de service `postgres`.
+
+Le volume PostgreSQL est initialisé une seule fois, dans l’ordre des migrations de
+[`supabase/migrations/`](C:/IT-Mozaic/SOMA-RH-local/supabase/migrations). Les secrets du fichier `.env` ne doivent jamais être commités.
+
+La migration des données de l’instance Supabase source nécessite une chaîne PostgreSQL directe complète
+dans `SUPABASE_SOURCE_DATABASE_URL` et une chaîne cible dans `TARGET_DATABASE_URL`. Le script
+[`scripts/migrate-postgres.ps1`](C:/IT-Mozaic/SOMA-RH-local/scripts/migrate-postgres.ps1) exécute l’export/import
+avec `pg_dump` et `pg_restore`, sans copier de données personnelles dans Git.
+Le seed de développement charge actuellement les référentiels et 26 salariés ; les bulletins ne seront
+présents qu’après l’import des données source.
+
+1. Copiez [`web/.env.example`](C:/IT-Mozaic/SOMA-RH-local/web/.env.example) vers `web/.env.local` :
+   l’URL doit être `http://localhost:8000`, celle de la passerelle PostgreSQL/JWT.
+2. Ouvrez l’application, créez un compte puis allez dans **Paramètres › Accès** et cliquez sur
+   **Me déclarer administrateur** (possible uniquement tant qu'aucun administrateur n'existe).
 3. Créez les comptes des autres utilisateurs, puis attribuez-leur les rôles **RH**, **Paie** ou **Salarié**.
    Reliez un compte à une fiche pour que le salarié consulte ses bulletins.
 
@@ -31,14 +54,12 @@ La paie d'**août 2026** est déjà chargée et calculée (statut « Calculée �
 ## Mise en ligne sur Vercel
 
 Le dépôt est prêt : `vercel.json` (racine) construit l'application de `web/` et redirige toutes les routes vers
-`index.html` ; `web/.env.production` fournit l'URL Supabase et la clé publique au build.
+`index.html` ; `web/.env.production` fournit l'URL de la passerelle PostgreSQL et sa clé publique au build.
 
 1. Sur [vercel.com/new](https://vercel.com/new), importez le dépôt GitHub `mdiene/soma-rh`.
    Laissez **Root Directory** à la racine (`./`) : `vercel.json` fixe les commandes et le dossier `web/dist`.
-2. Cliquez sur **Deploy**. Aucune variable d'environnement n'est obligatoire ; pour changer de projet Supabase,
-   définissez `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY` dans Settings › Environment Variables.
-3. Dans Supabase › Authentication › URL Configuration, mettez l'adresse Vercel (ex. `https://soma-rh.vercel.app`)
-   en **Site URL** et ajoutez-la aux **Redirect URLs** : les liens de confirmation d'e-mail pointeront vers l'application en ligne.
+2. Cliquez sur **Deploy** et définissez `VITE_API_URL` et `VITE_API_PUBLIC_KEY` vers la passerelle PostgreSQL
+   déployée ; PostgreSQL ne doit jamais être exposé directement au navigateur.
 
 Chaque `git push` sur `main` redéploie automatiquement. Dans Claude Code, le plugin officiel **Vercel**
 (activé dans `.claude/settings.json`) ajoute les commandes `/deploy`, `/env` et `/status`.
@@ -122,3 +143,5 @@ exclu de Git par `.gitignore`).
 ## Documentation
 
 * [Analyse du classeur Excel](docs/ANALYSE_EXCEL.md) : feuilles, formules, barèmes, macros, validation, anomalies.
+* [Arbitrages des règles de paie](docs/ARBITRAGES_PAIE.md) : transport, IPM prestataires, indemnité de licenciement, arrondis (D10).
+* [Feuille de route](docs/FEUILLE_DE_ROUTE_SOMA_RH.md) : état réel, benchmark (Frappe HR, OrangeHRM, Odoo, Sage), angles morts, architecture cible, lots 0 à 8, décisions à valider.

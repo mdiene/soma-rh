@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import {
   BarChart3, CalendarCheck2, CalendarDays, Calculator, FileSpreadsheet, LayoutDashboard, LogOut, Menu,
-  Settings, SlidersHorizontal, Users, Wallet,
+  CalendarClock, History, PieChart, Inbox, UserCircle, LockKeyhole, Settings, SlidersHorizontal, Users, Wallet,
 } from 'lucide-react'
 import { Suspense, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
@@ -10,12 +10,18 @@ import { Spinner } from './ui'
 
 type Item = { to: string; label: string; icon: React.ElementType; roles?: Role[]; withoutRole?: boolean }
 const GROUPS: { title: string; items: Item[] }[] = [
-  { title: 'Pilotage', items: [{ to: '/', label: 'Tableau de bord', icon: LayoutDashboard, roles: ['rh', 'paie'] }] },
+  { title: 'Pilotage', items: [
+    { to: '/', label: 'Tableau de bord', icon: LayoutDashboard, roles: ['rh', 'paie'] },
+    { to: '/pilotage', label: 'Pilotage RH', icon: PieChart, roles: ['rh', 'paie'] },
+    { to: '/mon-espace', label: 'Mon espace', icon: UserCircle, roles: ['salarie', 'rh', 'paie'] },
+    { to: '/demandes', label: 'Demandes des salariés', icon: Inbox, roles: ['rh'] },
+  ] },
   {
     title: 'Personnel',
     items: [
       { to: '/salaries', label: 'Salariés', icon: Users, roles: ['rh', 'paie'] },
       { to: '/conges', label: 'Congés', icon: CalendarDays },
+      { to: '/planning', label: 'Planning des postes', icon: CalendarClock, roles: ['rh', 'paie'] },
       { to: '/presences', label: 'Présences', icon: CalendarCheck2, roles: ['rh', 'paie'] },
     ],
   },
@@ -24,13 +30,14 @@ const GROUPS: { title: string; items: Item[] }[] = [
     items: [
       { to: '/paie/variables', label: 'Variables du mois', icon: SlidersHorizontal, roles: ['paie', 'rh'] },
       { to: '/paie', label: 'Traitements de paie', icon: Wallet, roles: ['paie', 'rh'] },
-      { to: '/paie/simulateur', label: 'Simulateur net / brut', icon: Calculator, roles: ['paie'] },
+      { to: '/paie/gouvernance', label: 'Contrôle et clôture', icon: LockKeyhole, roles: ['paie', 'rh'] },
+      { to: '/paie/simulateur', label: 'Simulateur net / brut', icon: Calculator, roles: ['paie', 'rh'] },
       { to: '/etats', label: 'États et déclarations', icon: FileSpreadsheet, roles: ['paie', 'rh'] },
       { to: '/mes-bulletins', label: 'Mes bulletins', icon: BarChart3, roles: ['salarie', 'rh', 'paie'] },
     ],
   },
   // sans rôle : accès aux paramètres pour déclarer le premier administrateur
-  { title: 'Administration', items: [{ to: '/parametres', label: 'Paramètres', icon: Settings, roles: ['rh', 'paie'], withoutRole: true }] },
+  { title: 'Administration', items: [{ to: '/journal', label: 'Journal des modifications', icon: History, roles: ['rh'] }, { to: '/parametres', label: 'Paramètres', icon: Settings, roles: ['rh', 'paie'], withoutRole: true }] },
 ]
 
 export function Layout() {
