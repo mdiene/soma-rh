@@ -28,6 +28,7 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
   const company = useCompany()
   const me = useQuery({ queryKey: ['my_employee_id'], queryFn: async () => unwrap(await supabase.rpc('my_employee_id')) })
   const [editing, setEditing] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [f, setF] = useState({ leave_type: '', from_date: '', to_date: '', half_day: false, reason: '' })
 
   useEffect(() => {
@@ -108,7 +109,7 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
             )}
             {isHr && (
               <Button variant="ghost" icon={<Trash2 className="h-4 w-4" />} loading={remove.isPending}
-                onClick={() => { if (window.confirm(`Supprimer définitivement cette demande de congé${approved ? ' (approuvée : elle repasse d’abord en traitement)' : ''} ?`)) remove.mutate() }}>Supprimer</Button>
+                onClick={() => setConfirmDelete(true)}>Supprimer</Button>
             )}
             {isHr && app.status !== 'Ouverte' && app.status !== 'Annulée' && (() => {
               const txt = app.status === 'Approuvée'
@@ -165,6 +166,19 @@ export function LeaveDetailModal({ app, onClose }: { app: LeaveApp | null; onClo
           </dl>
         )}
         <div className="mt-3"><ErrorNote error={save.error || decide.error || remove.error} /></div>
+      </Modal>
+
+      <Modal open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Supprimer la demande de congé ?"
+        footer={<>
+          <Button variant="ghost" onClick={() => setConfirmDelete(false)}>Non, conserver</Button>
+          <Button variant="danger" icon={<Trash2 className="h-4 w-4" />} loading={remove.isPending}
+            onClick={() => remove.mutate(undefined, { onSettled: () => setConfirmDelete(false) })}>Oui, supprimer définitivement</Button>
+        </>}>
+        <p className="text-sm">
+          La demande de {emp ? `${emp.first_name} ${emp.last_name}` : 'ce salarié'} du {date(app.from_date)} au {date(app.to_date)} sera supprimée.
+        </p>
+        <p className="mt-2 text-sm font-medium text-signal">Cette suppression est définitive et ne pourra pas être annulée.</p>
+        {approved && <p className="mt-2 text-xs text-ink-soft">Cette demande est approuvée : elle repasse d’abord en traitement, puis elle est supprimée.</p>}
       </Modal>
 
       {/* Bon remis à l'employé : seul contenu imprimé */}
